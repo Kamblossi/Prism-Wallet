@@ -347,7 +347,15 @@ if (isset($_POST['username'])) {
                 </div>
                 <div class="form-group">
                     <label for="currency"><?= translate('main_currency', $i18n) ?>:</label>
-                    <?= renderCurrencyDropdown('', 'main_currency', 'currency', ['required' => '', 'placeholder' => 'Currency']) ?>
+                    <select id="currency" name="main_currency" placeholder="Currency">
+                        <?php
+                        foreach ($currencies as $currency) {
+                            ?>
+                            <option value="<?= $currency['code'] ?>"><?= $currency['name'] ?></option>
+                            <?php
+                        }
+                        ?>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label for="language"><?= translate('language', $i18n) ?>:</label>

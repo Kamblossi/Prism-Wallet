@@ -123,14 +123,6 @@ header .logo .logo-image svg {
 }
 
 /* PRISM WALLET text logo font & styling */
-/* Prefer WOFF2 if provided (add Anurati-Regular.woff2 into webfonts/ for faster load) */
-@font-face {
-  font-family: 'Anurati';
-  src: url('../webfonts/Anurati-Regular.woff2') format('woff2');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
 @font-face {
   font-family: 'Anurati';
   src: url('../webfonts/Anurati-Regular.otf') format('opentype');
@@ -147,16 +139,14 @@ header .logo .logo-text {
 }
 
 header .logo .brand-text {
-  --brand-letter-spacing: 0.18em; /* adjusted from 0.15em */
   font-family: 'Anurati', Barlow, 'Helvetica Neue', Helvetica, sans-serif;
-  letter-spacing: var(--brand-letter-spacing);
+  letter-spacing: 0.15em;
   font-size: clamp(1.4rem, 4vw, 2.2rem);
   color: var(--main-color);
   line-height: 1;
   display: inline-block;
   white-space: nowrap;
   user-select: none;
-  transition: letter-spacing .25s ease, background .6s ease;
 }
 
 /* Enforce removal of underline & color even if service worker cached old rules */
@@ -183,22 +173,8 @@ body.dark header .logo .brand-text {
 @media (max-width: 520px) {
   header .logo .brand-text {
     font-size: clamp(1.2rem, 6vw, 1.6rem);
-    letter-spacing: 0.14em; /* adjusted from 0.12em */
+    letter-spacing: 0.12em;
   }
-}
-
-/* Dark mode gradient + subtle glow */
-body.dark header .logo .brand-text {
-  background: linear-gradient(90deg, var(--main-color) 0%, rgba(var(--main-color-rgb), 0.8) 50%, var(--main-color) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent !important; /* reveal gradient */
-  text-shadow: 0 0 6px rgba(var(--main-color-rgb), 0.35);
-}
-
-/* Move logo further left by reducing container left padding */
-body>header>.contain {
-  padding-left: 8px;
 }
 
 .button-icon {
