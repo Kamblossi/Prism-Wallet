@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0 (2025-09-26)
+
+
+### Features
+
+* Updating currencies ([7e35d07](https://github.com/Kamblossi/Prism-Wallet/commit/7e35d07fbba45aa707ef87f13aa598b03f40cb96))
+
 ## [4.3.0](https://github.com/ellite/Wallos/compare/v4.2.0...v4.3.0) (2025-09-15)
 
 
