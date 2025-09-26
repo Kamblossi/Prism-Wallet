@@ -289,29 +289,14 @@ if (isset($_GET['error']) && $_GET['error'] == "oidc_user_not_found") {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
-    <meta name="apple-mobile-web-app-title" content="Prism Wallet">
+    <meta name="apple-mobile-web-app-title" content="PrismTech Wallet">
     <title>Prism Wallet - Subscription Tracker</title>
-    <!-- Favicons: Standard -->
-    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon/favicon-32x32.png?<?= $version ?>">
-    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon/favicon-16x16.png?<?= $version ?>">
-    <!-- Optional extras -->
-    <link rel="icon" type="image/svg+xml" href="/images/icon/favicon.svg?<?= $version ?>" />
-    <link rel="shortcut icon" href="/images/icon/favicon.ico?<?= $version ?>" />
-
-    <!-- Apple Touch Icons -->
-    <link rel="apple-touch-icon" sizes="180x180" href="/images/icon/apple-touch-icon-180x180.png?<?= $version ?>">
-    <link rel="apple-touch-icon" sizes="152x152" href="/images/icon/apple-touch-icon-152x152.png?<?= $version ?>">
-    <link rel="apple-touch-icon" sizes="120x120" href="/images/icon/apple-touch-icon-120x120.png?<?= $version ?>">
-
-    <!-- Android & PWA -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/images/icon/android-chrome-192x192.png?<?= $version ?>">
-    <link rel="icon" type="image/png" sizes="512x512" href="/images/icon/android-chrome-512x512.png?<?= $version ?>">
-    <link rel="manifest" href="/manifest.json?<?= $version ?>">
-
-    <!-- Microsoft Tiles -->
-    <meta name="msapplication-TileImage" content="/images/icon/mstile-144x144.png">
-    <meta name="msapplication-TileColor" content="#ffffff">
-    <meta name="msapplication-config" content="/images/icon/browserconfig.xml">
+    <!-- Favicon set (generated) -->
+    <link rel="icon" type="image/png" href="/images/icon/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/images/icon/favicon.svg" />
+    <link rel="shortcut icon" href="/images/icon/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icon/apple-touch-icon.png" />
+    <link rel="manifest" href="/images/icon/site.webmanifest" />
     <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
     <link rel="stylesheet" href="styles/login.css?<?= $version ?>">
     <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
@@ -332,10 +317,8 @@ if (isset($_GET['error']) && $_GET['error'] == "oidc_user_not_found") {
     <div class="content">
         <section class="container">
             <header>
-                <div class="logo-image" title="Prism Wallet - Subscription Tracker">
-                    <a href="." class="logo-text" aria-label="Prism Wallet Home">
-                        <span class="brand-text" data-brand="PRISM WALLET">PRISM W<span class="kern-wa">A</span>LLET</span>
-                    </a>
+                <div class="logo-image" title="Wallos - Subscription Tracker">
+                    <?php include "images/siteicons/svg/logo.php"; ?>
                 </div>
                 <p>
                     <?= translate('please_login', $i18n) ?>

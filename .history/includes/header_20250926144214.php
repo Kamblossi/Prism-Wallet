@@ -171,7 +171,7 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
     <div class="contain">
       <div class="logo">
         <a href="." class="logo-text" aria-label="Prism Wallet Home">
-          <span class="brand-text" data-brand="PRISM WALLET">PRISM W<span class="kern-wa">A</span>LLET</span>
+          <span class="brand-text" data-brand="PRISM WALLET">PRISM WALLET</span>
         </a>
       </div>
       <nav>

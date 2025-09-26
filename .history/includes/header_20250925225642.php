@@ -85,27 +85,11 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
   <meta name="apple-mobile-web-app-title" content="Prism Wallet">
   <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
   <meta name="referrer" content="no-referrer">
-  <!-- Favicons: Standard -->
-  <link rel="icon" type="image/png" sizes="32x32" href="/images/icon/favicon-32x32.png?<?= $version ?>">
-  <link rel="icon" type="image/png" sizes="16x16" href="/images/icon/favicon-16x16.png?<?= $version ?>">
-  <!-- Optional extras -->
-  <link rel="icon" type="image/svg+xml" href="/images/icon/favicon.svg?<?= $version ?>" />
-  <link rel="shortcut icon" href="/images/icon/favicon.ico?<?= $version ?>" />
-  
-  <!-- Apple Touch Icons -->
-  <link rel="apple-touch-icon" sizes="180x180" href="/images/icon/apple-touch-icon-180x180.png?<?= $version ?>">
-  <link rel="apple-touch-icon" sizes="152x152" href="/images/icon/apple-touch-icon-152x152.png?<?= $version ?>">
-  <link rel="apple-touch-icon" sizes="120x120" href="/images/icon/apple-touch-icon-120x120.png?<?= $version ?>">
-  
-  <!-- Android & PWA -->
-  <link rel="icon" type="image/png" sizes="192x192" href="/images/icon/android-chrome-192x192.png?<?= $version ?>">
-  <link rel="icon" type="image/png" sizes="512x512" href="/images/icon/android-chrome-512x512.png?<?= $version ?>">
-  <link rel="manifest" href="/manifest.json?<?= $version ?>">
-  
-  <!-- Microsoft Tiles -->
-  <meta name="msapplication-TileImage" content="/images/icon/mstile-144x144.png">
-  <meta name="msapplication-TileColor" content="#ffffff">
-  <meta name="msapplication-config" content="/images/icon/browserconfig.xml">
+  <link rel="icon" type="image/png" href="images/icon/favicon.ico" sizes="16x16">
+  <link rel="apple-touch-icon" href="images/icon/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="images/icon/apple-touch-icon-152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
+  <link rel="manifest" href="manifest.json" crossorigin="use-credentials">
   <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
   <link rel="stylesheet" href="styles/styles.css?<?= $version ?>">
   <link rel="stylesheet" href="styles/dark-theme.css?<?= $version ?>" id="dark-theme" <?= $theme != "dark" ? "disabled" : "" ?>>
@@ -171,7 +155,7 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
     <div class="contain">
       <div class="logo">
         <a href="." class="logo-text" aria-label="Prism Wallet Home">
-          <span class="brand-text" data-brand="PRISM WALLET">PRISM W<span class="kern-wa">A</span>LLET</span>
+          <span class="brand-text" data-brand="PRISM WALLET">PRISM WALLET</span>
         </a>
       </div>
       <nav>

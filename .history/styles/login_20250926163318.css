@@ -92,7 +92,7 @@ header .logo-image .brand-text {
 
 /* Kerning tweak: reduce W→A spacing slightly for balance */
 header .logo-image .brand-text .kern-wa {
-  margin-left: -0.12em;
+  margin-left: -0.05em;
 }
 
 /* Remove underline across states */

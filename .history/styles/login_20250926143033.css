@@ -47,11 +47,8 @@ body, html {
 
 header .logo-image {
   height: 80px;
-  /* Let content dictate width for proper centering */
-  width: auto;
-  max-width: 100%;
+  width: 215px;
   margin: 0px auto;
-  text-align: center;
 }
 
 header .logo-image svg {
@@ -74,15 +71,12 @@ header .logo-image .logo-text {
   align-items: center;
   justify-content: center;
   height: 80px;
-  font-family: 'Anurati', Barlow, 'Helvetica Neue', Helvetica, sans-serif;
 }
 
 header .logo-image .brand-text {
   font-family: 'Anurati', Barlow, 'Helvetica Neue', Helvetica, sans-serif;
-  /* Tighter, even spacing */
-  letter-spacing: 0.10em;
-  /* Responsive size to fit the 400px container nicely */
-  font-size: clamp(1.4rem, 4vw, 2rem);
+  letter-spacing: 0.18em;
+  font-size: 2.2rem;
   color: var(--main-color);
   line-height: 1;
   display: inline-block;
@@ -90,25 +84,14 @@ header .logo-image .brand-text {
   user-select: none;
 }
 
-/* Kerning tweak: reduce W→A spacing slightly for balance */
-header .logo-image .brand-text .kern-wa {
-  margin-left: -0.12em;
-}
-
 /* Remove underline across states */
-/* Kill default link styling and force brand color */
 header .logo-image a.logo-text,
 header .logo-image a.logo-text:link,
 header .logo-image a.logo-text:visited,
 header .logo-image a.logo-text:hover,
 header .logo-image a.logo-text:active {
   text-decoration: none !important;
-  color: var(--main-color) !important;
-}
-
-/* Ensure the span inherits currentColor (from anchor) */
-header .logo-image .brand-text {
-  color: currentColor;
+  color: inherit;
 }
 
 /* Dark mode gradient to match main app */
@@ -118,12 +101,6 @@ body.dark header .logo-image .brand-text {
   background-clip: text;
   color: transparent !important;
   text-shadow: 0 0 6px rgba(var(--main-color-rgb), 0.35);
-}
-
-@media (max-width: 520px) {
-  header .logo-image .brand-text {
-    letter-spacing: 0.08em;
-  }
 }
 
 .container > .message {

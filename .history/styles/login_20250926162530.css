@@ -90,11 +90,6 @@ header .logo-image .brand-text {
   user-select: none;
 }
 
-/* Kerning tweak: reduce W→A spacing slightly for balance */
-header .logo-image .brand-text .kern-wa {
-  margin-left: -0.12em;
-}
-
 /* Remove underline across states */
 /* Kill default link styling and force brand color */
 header .logo-image a.logo-text,
