@@ -147,7 +147,7 @@ if (isset($_POST['password']) && $_POST['password'] != "" && isset($_POST['confi
     <div class="content">
         <section class="container">
             <header>
-                <div class="logo-image" title="Prism Wallet - Subscription Tracker">
+                <div class="logo-image" title="Wallos - Subscription Tracker">
                     <?php include "images/siteicons/svg/logo.php"; ?>
                 </div>
                 <p>

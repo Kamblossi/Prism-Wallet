@@ -148,7 +148,7 @@ if (isset($_POST['one-time-code'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
     <meta name="apple-mobile-web-app-title" content="Wallos">
-    <title>Prism Wallet - Subscription Tracker</title>
+    <title>Wallos - Subscription Tracker</title>
     <link rel="icon" type="image/png" href="images/icon/favicon.ico" sizes="16x16">
     <link rel="apple-touch-icon" href="images/icon/apple-touch-icon.png">
     <link rel="apple-touch-icon" sizes="152x152" href="images/icon/apple-touch-icon-152.png">
@@ -174,7 +174,7 @@ if (isset($_POST['one-time-code'])) {
     <div class="content">
         <section class="container">
             <header>
-                <div class="logo-image" title="Prism Wallet - Subscription Tracker">
+                <div class="logo-image" title="Wallos - Subscription Tracker">
                     <?php include "images/siteicons/svg/logo.php"; ?>
                 </div>
                 <p>

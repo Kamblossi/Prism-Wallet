@@ -137,7 +137,8 @@ if (isset($_POST['username'])) {
     $main_currency = $_POST['main_currency'];
     $main_currency_index = array_search($main_currency, array_column($currencies, 'code'));
     $main_currency_id = $currencies[$main_currency_index]['id'];
-    $language = $_POST['language'];
+    // Language may not exist in older schemas; default to 'en'
+    $language = isset($_POST['language']) && $_POST['language'] !== '' ? $_POST['language'] : 'en';
     $avatar = "images/avatars/0.svg";
 
     if ($password != $confirm_password) {
@@ -168,8 +169,27 @@ if (isset($_POST['username'])) {
     $requireValidation = false;
 
     if ($hasErrors == false) {
-        $query = "INSERT INTO user (username, firstname, lastname, email, password, main_currency, avatar, language, budget) VALUES (:username, :firstname, :lastname, :email, :password, :main_currency, :avatar, :language, :budget)";
+        // Detect whether the 'language' column exists in the user table for backwards compatibility
+        $hasLanguageColumn = false;
+        $pragma = $db->query("PRAGMA table_info(user)");
+        while ($col = $pragma->fetchArray(SQLITE3_ASSOC)) {
+            if (isset($col['name']) && $col['name'] === 'language') {
+                $hasLanguageColumn = true;
+                break;
+            }
+        }
+
+        if ($hasLanguageColumn) {
+            $query = "INSERT INTO user (username, firstname, lastname, email, password, main_currency, avatar, language, budget) VALUES (:username, :firstname, :lastname, :email, :password, :main_currency, :avatar, :language, :budget)";
+        } else {
+            $query = "INSERT INTO user (username, firstname, lastname, email, password, main_currency, avatar, budget) VALUES (:username, :firstname, :lastname, :email, :password, :main_currency, :avatar, :budget)";
+        }
         $stmt = $db->prepare($query);
+        if ($stmt === false) {
+            // Prepare failed (likely due to schema drift); surface a user-friendly error
+            $registrationFailed = true;
+            $hasErrors = true;
+        } else {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         $stmt->bindValue(':username', $username, SQLITE3_TEXT);
         $stmt->bindValue(':firstname', $firstname, SQLITE3_TEXT);
@@ -178,9 +198,13 @@ if (isset($_POST['username'])) {
         $stmt->bindValue(':password', $hashedPassword, SQLITE3_TEXT);
         $stmt->bindValue(':main_currency', $main_currency_id, SQLITE3_TEXT);
         $stmt->bindValue(':avatar', $avatar, SQLITE3_TEXT);
-        $stmt->bindValue(':language', $language, SQLITE3_TEXT);
+        if ($hasLanguageColumn) {
+            $stmt->bindValue(':language', $language, SQLITE3_TEXT);
+        }
         $stmt->bindValue(':budget', 0, SQLITE3_INTEGER);
         $result = $stmt->execute();
+
+        }
 
         if ($result) {
 
@@ -286,13 +310,24 @@ if (isset($_POST['username'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
-    <meta name="apple-mobile-web-app-title" content="Wallos">
+    <meta name="apple-mobile-web-app-title" content="Prism Wallet">
     <title>Prism Wallet - Subscription Tracker</title>
-    <link rel="icon" type="image/png" href="images/icon/favicon.ico" sizes="16x16">
-    <link rel="apple-touch-icon" href="images/icon/apple-touch-icon.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="images/icon/apple-touch-icon-152.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="images/icon/apple-touch-icon-180.png">
-    <link rel="manifest" href="manifest.json">
+    <!-- Favicons: Standard -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon/favicon-32x32.png?<?= $version ?>">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/icon/favicon-16x16.png?<?= $version ?>">
+    <!-- Optional extras -->
+    <link rel="icon" type="image/svg+xml" href="/images/icon/favicon.svg?<?= $version ?>" />
+    <link rel="shortcut icon" href="/images/icon/favicon.ico?<?= $version ?>" />
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icon/apple-touch-icon-180x180.png?<?= $version ?>">
+    <link rel="apple-touch-icon" sizes="152x152" href="/images/icon/apple-touch-icon-152x152.png?<?= $version ?>">
+    <link rel="apple-touch-icon" sizes="120x120" href="/images/icon/apple-touch-icon-120x120.png?<?= $version ?>">
+    
+    <!-- Android & PWA -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/images/icon/android-chrome-192x192.png?<?= $version ?>">
+    <link rel="icon" type="image/png" sizes="512x512" href="/images/icon/android-chrome-512x512.png?<?= $version ?>">
+    <link rel="manifest" href="/manifest.json?<?= $version ?>">
     <link rel="stylesheet" href="styles/theme.css?<?= $version ?>">
     <link rel="stylesheet" href="styles/login.css?<?= $version ?>">
     <link rel="stylesheet" href="styles/themes/red.css?<?= $version ?>" id="red-theme" <?= $colorTheme != "red" ? "disabled" : "" ?>>
@@ -314,7 +349,9 @@ if (isset($_POST['username'])) {
         <section class="container">
             <header>
                 <div class="logo-image" title="Prism Wallet - Subscription Tracker">
-                    <?php include "images/siteicons/svg/logo.php"; ?>
+                    <a href="." class="logo-text" aria-label="Prism Wallet Home">
+                        <span class="brand-text" data-brand="PRISM WALLET">PRISM W<span class="kern-wa">A</span>LLET</span>
+                    </a>
                 </div>
                 <p>
                     <?= translate('create_account', $i18n) ?>
@@ -408,16 +445,8 @@ if (isset($_POST['username'])) {
                 </div>
             </form>
             <?php
-            if ($userCount == 0) {
-                ?>
-                <div class="separator">
-                    <input type="button" class="secondary-button" value="<?= translate('restore_database', $i18n) ?>"
-                        id="restoreDB" onClick="openRestoreDBFileSelect()" />
-                    <input type="file" name="restoreDBFile" id="restoreDBFile" style="display: none;" onChange="restoreDB()"
-                        accept=".zip">
-                </div>
-                <?php
-            } else {
+            // New users should not see any database restore options.
+            if ($userCount > 0) {
                 ?>
                 <div class="separator">
                     <input id="goToLoginButton" type="button" class="secondary-button" value="<?= translate('login', $i18n) ?>">

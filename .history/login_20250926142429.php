@@ -332,7 +332,7 @@ if (isset($_GET['error']) && $_GET['error'] == "oidc_user_not_found") {
     <div class="content">
         <section class="container">
             <header>
-                <div class="logo-image" title="Wallos - Subscription Tracker">
+                <div class="logo-image" title="Prism Wallet - Subscription Tracker">
                     <?php include "images/siteicons/svg/logo.php"; ?>
                 </div>
                 <p>

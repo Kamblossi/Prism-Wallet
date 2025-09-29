@@ -13,14 +13,7 @@ $stmt = $db->prepare($query);
 $result = $stmt->execute();
 $admin = $result->fetchArray(SQLITE3_ASSOC);
 
-if ($admin['require_email_verification'] == 0) {
-    if (php_sapi_name() !== 'cli') {
-        echo "Email verification is not required.";
-    }
-    die();
-}
-
-$query = "SELECT * FROM email_verification WHERE email_sent = 0";
+$query = "SELECT * FROM password_resets WHERE email_sent = 0";
 $stmt = $db->prepare($query);
 $result = $stmt->execute();
 
@@ -50,11 +43,11 @@ if ($rows) {
         $mail->Host = $smtpAddress;
         $mail->SMTPAuth = $smtpAuth;
         if ($smtpAuth) {
-          $mail->Username = $smtpUsername;
-          $mail->Password = $smtpPassword;
+            $mail->Username = $smtpUsername;
+            $mail->Password = $smtpPassword;
         }
         if ($encryption != "none") {
-          $mail->SMTPSecure = $encryption;
+            $mail->SMTPSecure = $encryption;
         }
         $mail->Port = $smtpPort;
         $mail->setFrom($fromEmail);
@@ -63,26 +56,27 @@ if ($rows) {
             foreach ($rows as $user) {
                 $mail->addAddress($user['email']);
                 $mail->isHTML(true);
-                $mail->Subject = 'Prism Wallet - Email Verification';
+                $mail->Subject = 'Wallos - Reset Password';
                 $mail->Body = '<img src="' . $server_url . '/images/siteicons/wallos.png" alt="Logo" />
                     <br>
-                    Registration on Prism Wallet was successful.
+                    A password reset was requested for your account.
                     <br>
-                    Please click the following link to verify your email: <a href="' . $server_url . '/verifyemail.php?email=' . $user['email'] . '&token=' . $user['token'] . '">Verify Email</a>';
+                    Please click the following link to reset your password: <a href="' . $server_url . '/passwordreset.php?email=' . $user['email'] . '&token=' . $user['token'] . '">Reset Password</a>';
 
                 $mail->send();
 
-                $query = "UPDATE email_verification SET email_sent = 1 WHERE id = :id";
+                $query = "UPDATE password_resets SET email_sent = 1 WHERE id = :id";
                 $stmt = $db->prepare($query);
                 $stmt->bindParam(':id', $user['id'], SQLITE3_INTEGER);
                 $stmt->execute();
 
                 $mail->clearAddresses();
 
-                echo "Verification email sent to " . $user['email'] . "<br>";
+                echo "Password reset email sent to " . $user['email'] . "<br>";
+
             }
         } catch (Exception $e) {
-            echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo}";
+            echo "Message could not be sent. Mailer Error: {$mail->ErrorInfo} <br>";
         }
     } else {
         // There are no SMTP settings
@@ -92,9 +86,9 @@ if ($rows) {
         exit();
     }
 } else {
-    // There are no verification emails to be sent
+    // There are no password reset emails to be sent
     if (php_sapi_name() !== 'cli') {
-        echo "No verification emails to be sent.";
+        echo "There are no password reset emails to be sent.";
     }
     exit();
 }

@@ -81,7 +81,7 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Wallos - Subscription Tracker</title>
+  <title>Prism Wallet - Subscription Tracker</title>
   <meta name="apple-mobile-web-app-title" content="Wallos">
   <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
   <meta name="referrer" content="no-referrer">

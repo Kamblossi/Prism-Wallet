@@ -287,7 +287,7 @@ if (isset($_POST['username'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
     <meta name="apple-mobile-web-app-title" content="Wallos">
-    <title>Prism Wallet - Subscription Tracker</title>
+    <title>Wallos - Subscription Tracker</title>
     <link rel="icon" type="image/png" href="images/icon/favicon.ico" sizes="16x16">
     <link rel="apple-touch-icon" href="images/icon/apple-touch-icon.png">
     <link rel="apple-touch-icon" sizes="152x152" href="images/icon/apple-touch-icon-152.png">
@@ -313,7 +313,7 @@ if (isset($_POST['username'])) {
     <div class="content">
         <section class="container">
             <header>
-                <div class="logo-image" title="Prism Wallet - Subscription Tracker">
+                <div class="logo-image" title="Wallos - Subscription Tracker">
                     <?php include "images/siteicons/svg/logo.php"; ?>
                 </div>
                 <p>
@@ -407,24 +407,11 @@ if (isset($_POST['username'])) {
                     <input type="submit" value="<?= translate('register', $i18n) ?>">
                 </div>
             </form>
-            <?php
-            if ($userCount == 0) {
-                ?>
-                <div class="separator">
-                    <input type="button" class="secondary-button" value="<?= translate('restore_database', $i18n) ?>"
-                        id="restoreDB" onClick="openRestoreDBFileSelect()" />
-                    <input type="file" name="restoreDBFile" id="restoreDBFile" style="display: none;" onChange="restoreDB()"
-                        accept=".zip">
-                </div>
-                <?php
-            } else {
-                ?>
+            <?php if ($userCount > 0): ?>
                 <div class="separator">
                     <input id="goToLoginButton" type="button" class="secondary-button" value="<?= translate('login', $i18n) ?>">
                 </div>
-                <?php
-            }
-            ?>
+            <?php endif; ?>
         </section>
     </div>
     <?php

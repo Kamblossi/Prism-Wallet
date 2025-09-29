@@ -66,7 +66,7 @@ if ($rows) {
                 $mail->Subject = 'Prism Wallet - Email Verification';
                 $mail->Body = '<img src="' . $server_url . '/images/siteicons/wallos.png" alt="Logo" />
                     <br>
-                    Registration on Prism Wallet was successful.
+                    Registration on Wallos was successful.
                     <br>
                     Please click the following link to verify your email: <a href="' . $server_url . '/verifyemail.php?email=' . $user['email'] . '&token=' . $user['token'] . '">Verify Email</a>';
 
