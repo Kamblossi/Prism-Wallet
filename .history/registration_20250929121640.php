@@ -286,7 +286,7 @@ if (isset($_POST['username'])) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="<?= $theme == "light" ? "#FFFFFF" : "#222222" ?>" id="theme-color" />
-    <meta name="apple-mobile-web-app-title" content="Prism Wallet">
+    <meta name="apple-mobile-web-app-title" content="Wallos">
     <title>Prism Wallet - Subscription Tracker</title>
     <link rel="icon" type="image/png" href="images/icon/favicon.ico" sizes="16x16">
     <link rel="apple-touch-icon" href="images/icon/apple-touch-icon.png">
@@ -314,9 +314,7 @@ if (isset($_POST['username'])) {
         <section class="container">
             <header>
                 <div class="logo-image" title="Prism Wallet - Subscription Tracker">
-                    <a href="." class="logo-text" aria-label="Prism Wallet Home">
-                        <span class="brand-text" data-brand="PRISM WALLET">PRISM W<span class="kern-wa">A</span>LLET</span>
-                    </a>
+                    <?php include "images/siteicons/svg/logo.php"; ?>
                 </div>
                 <p>
                     <?= translate('create_account', $i18n) ?>
