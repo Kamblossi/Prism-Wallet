@@ -5,12 +5,12 @@ require_once 'includes/header.php';
 // Get code of main currency to display on statistics
 $query = "SELECT c.code
           FROM currencies c
-          INNER JOIN user u ON c.id = u.main_currency
+          INNER JOIN users u ON c.id = u.main_currency
           WHERE u.id = :userId";
-$stmt = $db->prepare($query);
-$stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-$result = $stmt->execute();
-$row = $result->fetchArray(SQLITE3_ASSOC);
+$stmt = $pdo->prepare($query);
+$stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+$stmt->execute();
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
 $code = $row['code'];
 
 require_once 'includes/stats_calculations.php';

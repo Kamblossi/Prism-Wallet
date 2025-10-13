@@ -135,17 +135,17 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
   $sql .= " ORDER BY " . implode(", ", $orderByClauses);
 
-  $stmt = $db->prepare($sql);
-  $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+  $stmt = $pdo->prepare($sql);
+  $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
 
   foreach ($params as $key => $value) {
     $stmt->bindValue($key, $value);
   }
 
-  $result = $stmt->execute();
-  if ($result) {
+  $stmt->execute();
+  // PDO conversion - removed result check
     $subscriptions = array();
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
       $subscriptions[] = $row;
     }
   }

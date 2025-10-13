@@ -5,15 +5,15 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     if ($_SERVER["REQUEST_METHOD"] === "DELETE") {
         $subscriptionId = $_GET["id"];
         $deleteQuery = "DELETE FROM subscriptions WHERE id = :subscriptionId AND user_id = :userId";
-        $deleteStmt = $db->prepare($deleteQuery);
-        $deleteStmt->bindParam(':subscriptionId', $subscriptionId, SQLITE3_INTEGER);
-        $deleteStmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+        $deleteStmt = $pdo->prepare($deleteQuery);
+        $deleteStmt->bindParam(':subscriptionId', $subscriptionId, PDO::PARAM_INT);
+        $deleteStmt->bindParam(':userId', $userId, PDO::PARAM_INT);
 
         if ($deleteStmt->execute()) {
             $query = "UPDATE subscriptions SET replacement_subscription_id = NULL WHERE replacement_subscription_id = :subscriptionId AND user_id = :userId";
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(':subscriptionId', $subscriptionId, SQLITE3_INTEGER);
-            $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+            $stmt = $pdo->prepare($query);
+            $stmt->bindParam(':subscriptionId', $subscriptionId, PDO::PARAM_INT);
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             $stmt->execute();
 
             http_response_code(204);

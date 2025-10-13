@@ -44,9 +44,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         $query = "SELECT COUNT(*) FROM ntfy_notifications WHERE user_id = :userId";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(":userId", $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(":userId", $userId, PDO::PARAM_INT);
+        $stmt->execute();
 
         if ($result === false) {
             $response = [
@@ -65,13 +65,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                               SET enabled = :enabled, host = :host, topic = :topic, headers = :headers, ignore_ssl = :ignore_ssl WHERE user_id = :userId";
             }
 
-            $stmt = $db->prepare($query);
-            $stmt->bindValue(':enabled', $enabled, SQLITE3_INTEGER);
-            $stmt->bindValue(':host', $host, SQLITE3_TEXT);
-            $stmt->bindValue(':topic', $topic, SQLITE3_TEXT);
-            $stmt->bindValue(':headers', $headers, SQLITE3_TEXT);
-            $stmt->bindValue(':ignore_ssl', $ignore_ssl, SQLITE3_INTEGER);
-            $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+            $stmt = $pdo->prepare($query);
+            $stmt->bindValue(':enabled', $enabled, PDO::PARAM_INT);
+            $stmt->bindValue(':host', $host, PDO::PARAM_STR);
+            $stmt->bindValue(':topic', $topic, PDO::PARAM_STR);
+            $stmt->bindValue(':headers', $headers, PDO::PARAM_STR);
+            $stmt->bindValue(':ignore_ssl', $ignore_ssl, PDO::PARAM_INT);
+            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
 
             if ($stmt->execute()) {
                 $response = [

@@ -23,7 +23,7 @@ if (php_sapi_name() == 'cli') {
 
 // Get all user ids
 $query = "SELECT id, username FROM user";
-$stmt = $db->prepare($query);
+$stmt = $pdo->prepare($query);
 $usersToNotify = $stmt->execute();
 
 function getDaysText($days)
@@ -49,7 +49,7 @@ function formatPrice($price, $currencyCode, $currencySymbol)
     return $formattedPrice;
 }
 
-while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
+while ($userToNotify = $usersToNotify->fetch(PDO::FETCH_ASSOC)) {
     $userId = $userToNotify['id'];
     if (php_sapi_name() !== 'cli') {
         echo "For user: " . $userToNotify['username'] . "<br /><br />";
@@ -66,22 +66,22 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
     // Get notification settings (how many days before the subscription ends should the notification be sent)
     $query = "SELECT days FROM notification_settings WHERE user_id = :userId";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $days = $row['days'];
     }
 
 
     // Check if email notifications are enabled and get the settings
     $query = "SELECT * FROM email_notifications WHERE user_id = :userId";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $emailNotificationsEnabled = $row['enabled'];
         $email['smtpAddress'] = $row["smtp_address"];
         $email['smtpPort'] = $row["smtp_port"];
@@ -94,11 +94,11 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
     // Check if Discord notifications are enabled and get the settings
     $query = "SELECT * FROM discord_notifications WHERE user_id = :userId";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $discordNotificationsEnabled = $row['enabled'];
         $discord['webhook_url'] = $row["webhook_url"];
         $discord['bot_username'] = $row["bot_username"];
@@ -107,13 +107,13 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
     // Check if Gotify notifications are enabled and get the settings
     $query = "SELECT * FROM gotify_notifications WHERE user_id = :userId";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
     $gotify = [];
 
-    if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $gotifyNotificationsEnabled = $row['enabled'];
         $gotify['serverUrl'] = $row["url"];
         $gotify['appToken'] = $row["token"];
@@ -122,32 +122,32 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
     // Check if Telegram notifications are enabled and get the settings
     $query = "SELECT * FROM telegram_notifications WHERE user_id = :userId";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $telegramNotificationsEnabled = $row['enabled'];
         $telegram['botToken'] = $row["bot_token"];
         $telegram['chatId'] = $row["chat_id"];
     }
     // Check if PushPlus notifications are enabled and get the settings
     $query = "SELECT * FROM pushplus_notifications WHERE user_id = :userId";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $pushplusNotificationsEnabled = $row['enabled'];
         $pushplus['token'] = $row["token"];
     }
     // Check if Pushover notifications are enabled and get the settings
     $query = "SELECT * FROM pushover_notifications WHERE user_id = :userId";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $pushoverNotificationsEnabled = $row['enabled'];
         $pushover['user_key'] = $row["user_key"];
         $pushover['token'] = $row["token"];
@@ -155,11 +155,11 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
     // Check if Ntfy notifications are enabled and get the settings
     $query = "SELECT * FROM ntfy_notifications WHERE user_id = :userId";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $ntfyNotificationsEnabled = $row['enabled'];
         $ntfy['host'] = $row["host"];
         $ntfy['topic'] = $row["topic"];
@@ -169,11 +169,11 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
     // Check if Webhook notifications are enabled and get the settings
     $query = "SELECT * FROM webhook_notifications WHERE user_id = :userId";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $webhookNotificationsEnabled = $row['enabled'];
         $webhook['url'] = $row["url"];
         $webhook['request_method'] = $row["request_method"];
@@ -196,47 +196,47 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
         // Get all currencies
         $currencies = array();
         $query = "SELECT * FROM currencies WHERE user_id = :userId";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+        $stmt->execute();
 
-        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $currencies[$row['id']] = $row;
         }
 
         // Get all household members
         $query = "SELECT * FROM household WHERE user_id = :userId";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
         $resultHousehold = $stmt->execute();
 
         $household = [];
-        while ($rowHousehold = $resultHousehold->fetchArray(SQLITE3_ASSOC)) {
+        while ($rowHousehold = $resultHousehold->fetch(PDO::FETCH_ASSOC)) {
             $household[$rowHousehold['id']] = $rowHousehold;
         }
 
         // Get all categories
         $query = "SELECT * FROM categories WHERE user_id = :userId";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
         $resultCategories = $stmt->execute();
 
         $categories = [];
-        while ($rowCategory = $resultCategories->fetchArray(SQLITE3_ASSOC)) {
+        while ($rowCategory = $resultCategories->fetch(PDO::FETCH_ASSOC)) {
             $categories[$rowCategory['id']] = $rowCategory;
         }
 
         $query = "SELECT * FROM subscriptions WHERE user_id = :user_id AND notify = :notify AND inactive = :inactive ORDER BY payer_user_id ASC";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-        $stmt->bindValue(':notify', 1, SQLITE3_INTEGER);
-        $stmt->bindValue(':inactive', 0, SQLITE3_INTEGER);
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':notify', 1, PDO::PARAM_INT);
+        $stmt->bindValue(':inactive', 0, PDO::PARAM_INT);
         $resultSubscriptions = $stmt->execute();
 
         $notify = [];
         $i = 0;
         $currentDate = new DateTime('now');
-        while ($rowSubscription = $resultSubscriptions->fetchArray(SQLITE3_ASSOC)) {
+        while ($rowSubscription = $resultSubscriptions->fetch(PDO::FETCH_ASSOC)) {
             if ($rowSubscription['notify_days_before'] !== -1) {
                 $daysToCompare = $rowSubscription['notify_days_before'];
             } else {
@@ -274,10 +274,10 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
             // Email notifications if enabled
             if ($emailNotificationsEnabled) {
 
-                $stmt = $db->prepare('SELECT * FROM user WHERE id = :user_id');
-                $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-                $result = $stmt->execute();
-                $defaultUser = $result->fetchArray(SQLITE3_ASSOC);
+                $stmt = $pdo->prepare('SELECT * FROM users WHERE id = :user_id');
+                $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+                $stmt->execute();
+                $defaultUser = $stmt->fetch(PDO::FETCH_ASSOC);
                 $defaultEmail = $defaultUser['email'];
                 $defaultName = $defaultUser['username'];
 
@@ -312,10 +312,10 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
 
                     $mail->Port = $email['smtpPort'];
 
-                    $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-                    $result = $stmt->execute();
-                    $user = $result->fetchArray(SQLITE3_ASSOC);
+                    $stmt = $pdo->prepare('SELECT * FROM household WHERE id = :userId');
+                    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+                    $stmt->execute();
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
                     $emailaddress = !empty($user['email']) ? $user['email'] : $defaultEmail;
                     $name = !empty($user['name']) ? $user['name'] : $defaultName;
@@ -352,10 +352,10 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
             if ($discordNotificationsEnabled) {
                 foreach ($notify as $userId => $perUser) {
                     // Get name of user from household table
-                    $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-                    $result = $stmt->execute();
-                    $user = $result->fetchArray(SQLITE3_ASSOC);
+                    $stmt = $pdo->prepare('SELECT * FROM household WHERE id = :userId');
+                    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+                    $stmt->execute();
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
                     $title = translate('wallos_notification', $i18n);
 
@@ -407,10 +407,10 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
             if ($gotifyNotificationsEnabled) {
                 foreach ($notify as $userId => $perUser) {
                     // Get name of user from household table
-                    $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-                    $result = $stmt->execute();
-                    $user = $result->fetchArray(SQLITE3_ASSOC);
+                    $stmt = $pdo->prepare('SELECT * FROM household WHERE id = :userId');
+                    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+                    $stmt->execute();
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
                     if ($user['name']) {
                         $message = $user['name'] . ", the following subscriptions are up for renewal:\n";
@@ -461,10 +461,10 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
             if ($telegramNotificationsEnabled) {
                 foreach ($notify as $userId => $perUser) {
                     // Get name of user from household table
-                    $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-                    $result = $stmt->execute();
-                    $user = $result->fetchArray(SQLITE3_ASSOC);
+                    $stmt = $pdo->prepare('SELECT * FROM household WHERE id = :userId');
+                    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+                    $stmt->execute();
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
                     if ($user['name']) {
                         $message = $user['name'] . ", the following subscriptions are up for renewal:\n";
@@ -511,10 +511,10 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
             if ($pushplusNotificationsEnabled) {
                 foreach ($notify as $userId => $perUser) {
                     // Get name of user from household table
-                    $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-                    $result = $stmt->execute();
-                    $user = $result->fetchArray(SQLITE3_ASSOC);
+                    $stmt = $pdo->prepare('SELECT * FROM household WHERE id = :userId');
+                    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+                    $stmt->execute();
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
                     // Build Message Content
                     $messageContent = "";
@@ -573,10 +573,10 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
             if ($pushoverNotificationsEnabled) {
                 foreach ($notify as $userId => $perUser) {
                     // Get name of user from household table
-                    $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-                    $result = $stmt->execute();
-                    $user = $result->fetchArray(SQLITE3_ASSOC);
+                    $stmt = $pdo->prepare('SELECT * FROM household WHERE id = :userId');
+                    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+                    $stmt->execute();
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
                     if ($user['name']) {
                         $message = $user['name'] . ", the following subscriptions are up for renewal:\n";
@@ -615,10 +615,10 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
             if ($ntfyNotificationsEnabled) {
                 foreach ($notify as $userId => $perUser) {
                     // Get name of user from household table
-                    $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-                    $result = $stmt->execute();
-                    $user = $result->fetchArray(SQLITE3_ASSOC);
+                    $stmt = $pdo->prepare('SELECT * FROM household WHERE id = :userId');
+                    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+                    $stmt->execute();
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
                     if ($user['name']) {
                         $message = $user['name'] . ", the following subscriptions are up for renewal:\n";
@@ -671,10 +671,10 @@ while ($userToNotify = $usersToNotify->fetchArray(SQLITE3_ASSOC)) {
             if ($webhookNotificationsEnabled) {
                 foreach ($notify as $userId => $perUser) {
                     // Get name of user from household table
-                    $stmt = $db->prepare('SELECT * FROM household WHERE id = :userId');
-                    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-                    $result = $stmt->execute();
-                    $user = $result->fetchArray(SQLITE3_ASSOC);
+                    $stmt = $pdo->prepare('SELECT * FROM household WHERE id = :userId');
+                    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+                    $stmt->execute();
+                    $user = $stmt->fetch(PDO::FETCH_ASSOC);
             
                     if ($user['name']) {
                         $payer = $user['name'];

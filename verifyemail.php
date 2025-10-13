@@ -38,17 +38,17 @@ if (isset($_GET['email']) && isset($_GET['token'])) {
     $token = $_GET['token'];
 
     $query = "SELECT * FROM email_verification WHERE email = :email AND token = :token";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':email', $email, SQLITE3_TEXT);
-    $stmt->bindValue(':token', $token, SQLITE3_TEXT);
-    $result = $stmt->execute();
-    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+    $stmt->bindValue(':token', $token, PDO::PARAM_STR);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($row) {
         $query = "DELETE FROM email_verification WHERE email = :email AND token = :token";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(':email', $email, SQLITE3_TEXT);
-        $stmt->bindValue(':token', $token, SQLITE3_TEXT);
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+        $stmt->bindValue(':token', $token, PDO::PARAM_STR);
         $stmt->execute();
 
         $validated = true;
@@ -58,9 +58,9 @@ if (isset($_GET['email']) && isset($_GET['token'])) {
 
     } else {
         $query = "SELECT require_email_verification FROM admin";
-        $stmt = $db->prepare($query);
-        $result = $stmt->execute();
-        $settings = $result->fetchArray(SQLITE3_ASSOC);
+        $stmt = $pdo->prepare($query);
+        $stmt->execute();
+        $settings = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($settings['require_email_verification'] != 1) {
             header("Location: .");

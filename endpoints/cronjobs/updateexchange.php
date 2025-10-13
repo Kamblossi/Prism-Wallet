@@ -12,20 +12,20 @@ if (php_sapi_name() == 'cli') {
 }
 
 $query = "SELECT id, username FROM user";
-$stmt = $db->prepare($query);
+$stmt = $pdo->prepare($query);
 $usersToUpdateExchange = $stmt->execute();
 
-while ($userToUpdateExchange = $usersToUpdateExchange->fetchArray(SQLITE3_ASSOC)) {
+while ($userToUpdateExchange = $usersToUpdateExchange->fetch(PDO::FETCH_ASSOC)) {
     $userId = $userToUpdateExchange['id'];
     echo "For user: " . $userToUpdateExchange['username'] . "<br />";
 
     $query = "SELECT api_key, provider FROM fixer WHERE user_id = :userId";
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($result) {
-        $row = $result->fetchArray(SQLITE3_ASSOC);
+    // PDO conversion - removed result check
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
         if ($row) {
             $apiKey = $row['api_key'];
@@ -33,18 +33,18 @@ while ($userToUpdateExchange = $usersToUpdateExchange->fetchArray(SQLITE3_ASSOC)
 
             $codes = "";
             $query = "SELECT id, name, symbol, code FROM currencies WHERE user_id = :userId";
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-            $result = $stmt->execute();
-            while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            $stmt = $pdo->prepare($query);
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $codes .= $row['code'] . ",";
             }
             $codes = rtrim($codes, ',');
             $query = "SELECT u.main_currency, c.code FROM user u LEFT JOIN currencies c ON u.main_currency = c.id WHERE u.id = :userId";
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-            $result = $stmt->execute();
-            $row = $result->fetchArray(SQLITE3_ASSOC);
+            $stmt = $pdo->prepare($query);
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
             $mainCurrencyCode = $row['code'];
             $mainCurrencyId = $row['main_currency'];
 
@@ -74,9 +74,9 @@ while ($userToUpdateExchange = $usersToUpdateExchange->fetchArray(SQLITE3_ASSOC)
                         $exchangeRate = $rate / $mainCurrencyToEUR;
                     }
                     $updateQuery = "UPDATE currencies SET rate = :rate WHERE code = :code";
-                    $updateStmt = $db->prepare($updateQuery);
-                    $updateStmt->bindParam(':rate', $exchangeRate, SQLITE3_TEXT);
-                    $updateStmt->bindParam(':code', $currencyCode, SQLITE3_TEXT);
+                    $updateStmt = $pdo->prepare($updateQuery);
+                    $updateStmt->bindParam(':rate', $exchangeRate, PDO::PARAM_STR);
+                    $updateStmt->bindParam(':code', $currencyCode, PDO::PARAM_STR);
                     $updateResult = $updateStmt->execute();
 
                     if (!$updateResult) {
@@ -87,15 +87,15 @@ while ($userToUpdateExchange = $usersToUpdateExchange->fetchArray(SQLITE3_ASSOC)
                 $formattedDate = $currentDate->format('Y-m-d');
 
                 $deleteQuery = "DELETE FROM last_exchange_update WHERE user_id = :userId";
-                $deleteStmt = $db->prepare($deleteQuery);
-                $deleteStmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+                $deleteStmt = $pdo->prepare($deleteQuery);
+                $deleteStmt->bindParam(':userId', $userId, PDO::PARAM_INT);
                 $deleteResult = $deleteStmt->execute();
 
                 $query = "INSERT INTO last_exchange_update (date, user_id) VALUES (:formattedDate, :userId)";
-                $stmt = $db->prepare($query);
-                $stmt->bindParam(':formattedDate', $formattedDate, SQLITE3_TEXT);
-                $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-                $result = $stmt->execute();
+                $stmt = $pdo->prepare($query);
+                $stmt->bindParam(':formattedDate', $formattedDate, PDO::PARAM_STR);
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+                $stmt->execute();
 
                 echo "Rates updated successfully!<br />";
             }

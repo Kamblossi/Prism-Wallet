@@ -48,11 +48,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     $month = $_REQUEST['month'];
     $year = $_REQUEST['year'];
 
-    $sql = "SELECT * FROM user WHERE api_key = :apiKey";
-    $stmt = $db->prepare($sql);
+    $sql = "SELECT * FROM users WHERE api_key = :apiKey";
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':apiKey', $apiKey);
-    $result = $stmt->execute();
-    $user = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
     // If the user is not found or the API key is invalid, return an error
     if (!$user) {
         echo json_encode([
@@ -65,7 +65,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
 
     $sql = "SELECT * FROM last_exchange_update";
     $result = $db->query($sql);
-    $lastExchangeUpdate = $result->fetchArray(SQLITE3_ASSOC);
+    $lastExchangeUpdate = $stmt->fetch(PDO::FETCH_ASSOC);
 
     $userId = $user['id'];
     $userCurrencyId = $user['main_currency'];
@@ -73,10 +73,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     $canConvertCurrency = empty($lastExchangeUpdate['date']) ? false : true;
 
     $sql = "SELECT * FROM currencies WHERE id = :currencyId";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':currencyId', $userCurrencyId);
-    $result = $stmt->execute();
-    $currency = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $currency = $stmt->fetch(PDO::FETCH_ASSOC);
     $currency_code = $currency['code'];
     $currency_symbol = $currency['symbol'];
 
@@ -86,11 +86,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     $notes = [];
 
     $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = 0";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
+    $stmt->execute();
     $subscriptions = [];
-    while ($subscription = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($subscription = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $subscriptions[] = $subscription;
         if ($subscription['currency_id'] !== $userCurrencyId) {
             $needsCurrencyConversion = true;
@@ -102,11 +102,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
             $notes[] = "You are using multiple currencies, but the exchange rates have not been updated yet. Please check your Fixer API Key.";
         } else {
             $sql = "SELECT * FROM currencies WHERE user_id = :userId";
-            $stmt = $db->prepare($sql);
+            $stmt = $pdo->prepare($sql);
             $stmt->bindValue(':userId', $userId);
-            $result = $stmt->execute();
+            $stmt->execute();
             $currencies = [];
-            while ($currency = $result->fetchArray(SQLITE3_ASSOC)) {
+            while ($currency = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $currencies[$currency['id']] = $currency['rate'];
             }
         }

@@ -9,9 +9,9 @@ require_once __DIR__ . '/../../includes/connect_endpoint_crontabs.php';
 require 'settimezone.php';
 
 $query = "SELECT * FROM admin";
-$stmt = $db->prepare($query);
-$result = $stmt->execute();
-$admin = $result->fetchArray(SQLITE3_ASSOC);
+$stmt = $pdo->prepare($query);
+$stmt->execute();
+$admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($admin['require_email_verification'] == 0) {
     if (php_sapi_name() !== 'cli') {
@@ -21,11 +21,11 @@ if ($admin['require_email_verification'] == 0) {
 }
 
 $query = "SELECT * FROM email_verification WHERE email_sent = 0";
-$stmt = $db->prepare($query);
-$result = $stmt->execute();
+$stmt = $pdo->prepare($query);
+$stmt->execute();
 
 $rows = [];
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $rows[] = $row;
 }
 
@@ -73,8 +73,8 @@ if ($rows) {
                 $mail->send();
 
                 $query = "UPDATE email_verification SET email_sent = 1 WHERE id = :id";
-                $stmt = $db->prepare($query);
-                $stmt->bindParam(':id', $user['id'], SQLITE3_INTEGER);
+                $stmt = $pdo->prepare($query);
+                $stmt->bindParam(':id', $user['id'], PDO::PARAM_INT);
                 $stmt->execute();
 
                 $mail->clearAddresses();

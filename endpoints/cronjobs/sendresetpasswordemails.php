@@ -9,16 +9,16 @@ require_once __DIR__ . '/../../includes/connect_endpoint_crontabs.php';
 require 'settimezone.php';
 
 $query = "SELECT * FROM admin";
-$stmt = $db->prepare($query);
-$result = $stmt->execute();
-$admin = $result->fetchArray(SQLITE3_ASSOC);
+$stmt = $pdo->prepare($query);
+$stmt->execute();
+$admin = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $query = "SELECT * FROM password_resets WHERE email_sent = 0";
-$stmt = $db->prepare($query);
-$result = $stmt->execute();
+$stmt = $pdo->prepare($query);
+$stmt->execute();
 
 $rows = [];
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $rows[] = $row;
 }
 
@@ -66,8 +66,8 @@ if ($rows) {
                 $mail->send();
 
                 $query = "UPDATE password_resets SET email_sent = 1 WHERE id = :id";
-                $stmt = $db->prepare($query);
-                $stmt->bindParam(':id', $user['id'], SQLITE3_INTEGER);
+                $stmt = $pdo->prepare($query);
+                $stmt->bindParam(':id', $user['id'], PDO::PARAM_INT);
                 $stmt->execute();
 
                 $mail->clearAddresses();

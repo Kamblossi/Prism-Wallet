@@ -8,11 +8,11 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
     foreach ($categories as $categoryId) {
         $sql = "UPDATE categories SET `order` = :order WHERE id = :categoryId AND user_id = :userId";
-        $stmt = $db->prepare($sql);
-        $stmt->bindParam(':order', $order, SQLITE3_INTEGER);
-        $stmt->bindParam(':categoryId', $categoryId, SQLITE3_INTEGER);
-        $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':order', $order, PDO::PARAM_INT);
+        $stmt->bindParam(':categoryId', $categoryId, PDO::PARAM_INT);
+        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+        $stmt->execute();
         $order++;
     }
 

@@ -43,11 +43,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
 
 
     // Get user from API key
-    $sql = "SELECT * FROM user WHERE api_key = :apiKey";
-    $stmt = $db->prepare($sql);
+    $sql = "SELECT * FROM users WHERE api_key = :apiKey";
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':apiKey', $apiKey);
-    $result = $stmt->execute();
-    $user = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // If the user is not found, return an error
     if (!$user) {
@@ -66,10 +66,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     ]; 
 
     $query = "SELECT * FROM fixer WHERE user_id = :userId";
-    $stmt = $db->prepare($query);
+    $stmt = $pdo->prepare($query);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
-    $fixer = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $fixer = $stmt->fetch(PDO::FETCH_ASSOC);
 
     $notes = [];
 

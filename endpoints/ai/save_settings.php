@@ -55,22 +55,22 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         }
 
         // Remove existing AI settings for the user
-        $stmt = $db->prepare("DELETE FROM ai_settings WHERE user_id = ?");
-        $stmt->bindValue(1, $userId, SQLITE3_INTEGER);
+        $stmt = $pdo->prepare("DELETE FROM ai_settings WHERE user_id = ?");
+        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
         $stmt->execute();
         $stmt->close();
 
         // Insert new AI settings
-        $stmt = $db->prepare("INSERT INTO ai_settings (user_id, type, enabled, api_key, model, url) VALUES (:user_id, :type, :enabled, :api_key, :model, :url)");
-        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-        $stmt->bindValue(':type', $aiType, SQLITE3_TEXT);
-        $stmt->bindValue(':enabled', $aiEnabled, SQLITE3_INTEGER);
-        $stmt->bindValue(':api_key', $aiApiKey, SQLITE3_TEXT);
-        $stmt->bindValue(':model', $aiModel, SQLITE3_TEXT);
-        $stmt->bindValue(':url', $aiOllamaHost, SQLITE3_TEXT);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare("INSERT INTO ai_settings (user_id, type, enabled, api_key, model, url) VALUES (:user_id, :type, :enabled, :api_key, :model, :url)");
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->bindValue(':type', $aiType, PDO::PARAM_STR);
+        $stmt->bindValue(':enabled', $aiEnabled, PDO::PARAM_INT);
+        $stmt->bindValue(':api_key', $aiApiKey, PDO::PARAM_STR);
+        $stmt->bindValue(':model', $aiModel, PDO::PARAM_STR);
+        $stmt->bindValue(':url', $aiOllamaHost, PDO::PARAM_STR);
+        $stmt->execute();
 
-        if ($result) {
+        // PDO conversion - removed result check
             $response = [
                 "success" => true,
                 "message" => translate('success', $i18n),

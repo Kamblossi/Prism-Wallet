@@ -18,10 +18,10 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         }
 
         // Delete the recommendation for the user
-        $stmt = $db->prepare("DELETE FROM ai_recommendations WHERE id = ? AND user_id = ?");
-        $stmt->bindValue(1, $recommendationId, SQLITE3_INTEGER);
-        $stmt->bindValue(2, $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare("DELETE FROM ai_recommendations WHERE id = ? AND user_id = ?");
+        $stmt->bindValue(1, $recommendationId, PDO::PARAM_INT);
+        $stmt->bindValue(2, $userId, PDO::PARAM_INT);
+        $stmt->execute();
 
         if ($db->changes() > 0) {
             $response = [

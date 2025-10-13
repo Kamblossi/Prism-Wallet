@@ -3,23 +3,23 @@
 require_once '../../includes/connect_endpoint.php';
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
-    $paymentsInUseQuery = $db->prepare('SELECT id FROM payment_methods WHERE id IN (SELECT DISTINCT payment_method_id FROM subscriptions) AND user_id = :userId');
-    $paymentsInUseQuery->bindParam(':userId', $userId, SQLITE3_INTEGER);
+    $paymentsInUseQuery = $pdo->prepare('SELECT id FROM payment_methods WHERE id IN (SELECT DISTINCT payment_method_id FROM subscriptions) AND user_id = :userId');
+    $paymentsInUseQuery->bindParam(':userId', $userId, PDO::PARAM_INT);
     $result = $paymentsInUseQuery->execute();
 
     $paymentsInUse = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $paymentsInUse[] = $row['id'];
     }
 
     $sql = "SELECT * FROM payment_methods WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($result) {
+    // PDO conversion - removed result check
         $payments = array();
-        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $payments[] = $row;
         }
     } else {

@@ -7,8 +7,8 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         $provider = isset($_POST["provider"]) ? $_POST["provider"] : 0;
 
         $removeOldKey = "DELETE FROM fixer WHERE user_id = :userId";
-        $stmt = $db->prepare($removeOldKey);
-        $stmt->bindParam(":userId", $userId, SQLITE3_INTEGER);
+        $stmt = $pdo->prepare($removeOldKey);
+        $stmt->bindParam(":userId", $userId, PDO::PARAM_INT);
         $stmt->execute();
 
         if ($provider == 1) {
@@ -29,12 +29,12 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         if ($apiData['success'] && $apiData['success'] == 1) {
             if (!empty($newApiKey)) {
                 $insertNewKey = "INSERT INTO fixer (api_key, provider, user_id) VALUES (:api_key, :provider, :userId)";
-                $stmt = $db->prepare($insertNewKey);
-                $stmt->bindParam(":api_key", $newApiKey, SQLITE3_TEXT);
-                $stmt->bindParam(":provider", $provider, SQLITE3_INTEGER);
-                $stmt->bindParam(":userId", $userId, SQLITE3_INTEGER);
-                $result = $stmt->execute();
-                if ($result) {
+                $stmt = $pdo->prepare($insertNewKey);
+                $stmt->bindParam(":api_key", $newApiKey, PDO::PARAM_STR);
+                $stmt->bindParam(":provider", $provider, PDO::PARAM_INT);
+                $stmt->bindParam(":userId", $userId, PDO::PARAM_INT);
+                $stmt->execute();
+                // PDO conversion - removed result check
                     echo json_encode(["success" => true, "message" => translate('api_key_saved', $i18n)]);
                 } else {
                     $response = [

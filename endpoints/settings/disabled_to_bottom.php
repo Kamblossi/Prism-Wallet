@@ -22,9 +22,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         ]));
     }
 
-    $stmt = $db->prepare('UPDATE settings SET disabled_to_bottom = :disabled_to_bottom WHERE user_id = :userId');
-    $stmt->bindParam(':disabled_to_bottom', $disabled_to_bottom, SQLITE3_INTEGER);
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+    $stmt = $pdo->prepare('UPDATE settings SET disabled_to_bottom = :disabled_to_bottom WHERE user_id = :userId');
+    $stmt->bindParam(':disabled_to_bottom', $disabled_to_bottom, PDO::PARAM_INT);
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
         die(json_encode([

@@ -19,36 +19,36 @@ if (!function_exists('getAllWorldCurrencies')) {
 $allCurrencies = getAllWorldCurrencies();
 
 // 1. Update Kenyan Shilling symbol to 'KES'
-$updateStmt = $db->prepare("UPDATE currencies SET symbol = :newSymbol WHERE code = 'KES' AND symbol != :newSymbol");
-$updateStmt->bindValue(':newSymbol', 'KES', SQLITE3_TEXT);
+$updateStmt = $pdo->prepare("UPDATE currencies SET symbol = :newSymbol WHERE code = 'KES' AND symbol != :newSymbol");
+$updateStmt->bindValue(':newSymbol', 'KES', PDO::PARAM_STR);
 $updateStmt->execute();
 
 // 2. Insert missing currencies for each user
 $usersResult = $db->query('SELECT id FROM user');
 if ($usersResult === false) { return; }
 
-while ($userRow = $usersResult->fetchArray(SQLITE3_ASSOC)) {
+while ($userRow = $usersResult->fetch(PDO::FETCH_ASSOC)) {
     $uid = (int)$userRow['id'];
 
     // Collect existing codes
     $existingCodes = [];
-    $stmtExisting = $db->prepare('SELECT code FROM currencies WHERE user_id = :uid');
-    $stmtExisting->bindValue(':uid', $uid, SQLITE3_INTEGER);
+    $stmtExisting = $pdo->prepare('SELECT code FROM currencies WHERE user_id = :uid');
+    $stmtExisting->bindValue(':uid', $uid, PDO::PARAM_INT);
     $resExisting = $stmtExisting->execute();
-    while ($row = $resExisting->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $resExisting->fetch(PDO::FETCH_ASSOC)) {
         $existingCodes[$row['code']] = true;
     }
 
-    $stmtInsert = $db->prepare('INSERT INTO currencies (name, symbol, code, rate, user_id) VALUES (:name, :symbol, :code, :rate, :uid)');
+    $stmtInsert = $pdo->prepare('INSERT INTO currencies (name, symbol, code, rate, user_id) VALUES (:name, :symbol, :code, :rate, :uid)');
 
     foreach ($allCurrencies as $code => $data) {
         if (isset($existingCodes[$code])) { continue; }
         $stmtInsert->reset();
-        $stmtInsert->bindValue(':name', $data['name'], SQLITE3_TEXT);
-        $stmtInsert->bindValue(':symbol', $data['symbol'], SQLITE3_TEXT);
-        $stmtInsert->bindValue(':code', $data['code'], SQLITE3_TEXT);
-        $stmtInsert->bindValue(':rate', 1, SQLITE3_FLOAT);
-        $stmtInsert->bindValue(':uid', $uid, SQLITE3_INTEGER);
+        $stmtInsert->bindValue(':name', $data['name'], PDO::PARAM_STR);
+        $stmtInsert->bindValue(':symbol', $data['symbol'], PDO::PARAM_STR);
+        $stmtInsert->bindValue(':code', $data['code'], PDO::PARAM_STR);
+        $stmtInsert->bindValue(':rate', 1, PDO::PARAM_STR);
+        $stmtInsert->bindValue(':uid', $uid, PDO::PARAM_INT);
         $stmtInsert->execute();
     }
 }

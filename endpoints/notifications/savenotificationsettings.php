@@ -22,9 +22,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     } else {
         $days = $data["days"];
         $query = "SELECT COUNT(*) FROM notification_settings WHERE user_id = :userId";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(":userId", $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(":userId", $userId, PDO::PARAM_INT);
+        $stmt->execute();
 
         if ($result === false) {
             $response = [
@@ -42,9 +42,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                 $query = "UPDATE notification_settings SET days = :days WHERE user_id = :userId";
             }
 
-            $stmt = $db->prepare($query);
-            $stmt->bindValue(':days', $days, SQLITE3_INTEGER);
-            $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+            $stmt = $pdo->prepare($query);
+            $stmt->bindValue(':days', $days, PDO::PARAM_INT);
+            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
 
             if ($stmt->execute()) {
                 $response = [

@@ -284,32 +284,32 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             $sql .= " WHERE id = :id AND user_id = :userId";
         }
 
-        $stmt = $db->prepare($sql);
-        $stmt->bindParam(':name', $name, SQLITE3_TEXT);
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':name', $name, PDO::PARAM_STR);
         if ($logo != "") {
-            $stmt->bindParam(':logo', $logo, SQLITE3_TEXT);
+            $stmt->bindParam(':logo', $logo, PDO::PARAM_STR);
         }
-        $stmt->bindParam(':price', $price, SQLITE3_FLOAT);
-        $stmt->bindParam(':currencyId', $currencyId, SQLITE3_INTEGER);
-        $stmt->bindParam(':nextPayment', $nextPayment, SQLITE3_TEXT);
-        $stmt->bindParam(':autoRenew', $autoRenew, SQLITE3_INTEGER);
-        $stmt->bindParam(':startDate', $startDate, SQLITE3_TEXT);
-        $stmt->bindParam(':cycle', $cycle, SQLITE3_INTEGER);
-        $stmt->bindParam(':frequency', $frequency, SQLITE3_INTEGER);
-        $stmt->bindParam(':notes', $notes, SQLITE3_TEXT);
-        $stmt->bindParam(':paymentMethodId', $paymentMethodId, SQLITE3_INTEGER);
-        $stmt->bindParam(':payerUserId', $payerUserId, SQLITE3_INTEGER);
-        $stmt->bindParam(':categoryId', $categoryId, SQLITE3_INTEGER);
-        $stmt->bindParam(':notify', $notify, SQLITE3_INTEGER);
-        $stmt->bindParam(':inactive', $inactive, SQLITE3_INTEGER);
-        $stmt->bindParam(':url', $url, SQLITE3_TEXT);
-        $stmt->bindParam(':notifyDaysBefore', $notifyDaysBefore, SQLITE3_INTEGER);
-        $stmt->bindParam(':cancellationDate', $cancellationDate, SQLITE3_TEXT);
+        $stmt->bindParam(':price', $price, PDO::PARAM_STR);
+        $stmt->bindParam(':currencyId', $currencyId, PDO::PARAM_INT);
+        $stmt->bindParam(':nextPayment', $nextPayment, PDO::PARAM_STR);
+        $stmt->bindParam(':autoRenew', $autoRenew, PDO::PARAM_INT);
+        $stmt->bindParam(':startDate', $startDate, PDO::PARAM_STR);
+        $stmt->bindParam(':cycle', $cycle, PDO::PARAM_INT);
+        $stmt->bindParam(':frequency', $frequency, PDO::PARAM_INT);
+        $stmt->bindParam(':notes', $notes, PDO::PARAM_STR);
+        $stmt->bindParam(':paymentMethodId', $paymentMethodId, PDO::PARAM_INT);
+        $stmt->bindParam(':payerUserId', $payerUserId, PDO::PARAM_INT);
+        $stmt->bindParam(':categoryId', $categoryId, PDO::PARAM_INT);
+        $stmt->bindParam(':notify', $notify, PDO::PARAM_INT);
+        $stmt->bindParam(':inactive', $inactive, PDO::PARAM_INT);
+        $stmt->bindParam(':url', $url, PDO::PARAM_STR);
+        $stmt->bindParam(':notifyDaysBefore', $notifyDaysBefore, PDO::PARAM_INT);
+        $stmt->bindParam(':cancellationDate', $cancellationDate, PDO::PARAM_STR);
         if ($isEdit) {
-            $stmt->bindParam(':id', $id, SQLITE3_INTEGER);
+            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
         }
-        $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-        $stmt->bindParam(':replacement_subscription_id', $replacementSubscriptionId, SQLITE3_INTEGER);
+        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+        $stmt->bindParam(':replacement_subscription_id', $replacementSubscriptionId, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             $success['status'] = "Success";

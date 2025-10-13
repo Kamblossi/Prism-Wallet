@@ -43,10 +43,10 @@ function describeCurrency($currencyId, $currencies)
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
     // Get AI settings for the user from the database
-    $stmt = $db->prepare("SELECT * FROM ai_settings WHERE user_id = ?");
-    $stmt->bindValue(1, $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $aiSettings = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt = $pdo->prepare("SELECT * FROM ai_settings WHERE user_id = ?");
+    $stmt->bindValue(1, $userId, PDO::PARAM_INT);
+    $stmt->execute();
+    $aiSettings = $stmt->fetch(PDO::FETCH_ASSOC);
     $stmt->close();
     if (!$aiSettings) {
         $response = [
@@ -95,49 +95,49 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
     // We have everything we need, fetch information from the dabase to send to the AI API
     // Get the categories from the database for user with ID 1
-    $stmt = $db->prepare("SELECT * FROM categories WHERE user_id = :user_id");
-    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare("SELECT * FROM categories WHERE user_id = :user_id");
+    $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    $stmt->execute();
     $categories = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $categories[$row['id']] = $row;
     }
 
     // Get the currencies from the database for user with ID 1
-    $stmt = $db->prepare("SELECT * FROM currencies WHERE user_id = :user_id");
-    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare("SELECT * FROM currencies WHERE user_id = :user_id");
+    $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    $stmt->execute();
     $currencies = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $currencies[$row['id']] = $row;
     }
 
     // Get houswhold members from the database for user with ID 1
-    $stmt = $db->prepare("SELECT * FROM household WHERE user_id = :user_id");
-    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare("SELECT * FROM household WHERE user_id = :user_id");
+    $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    $stmt->execute();
     $members = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $members[$row['id']] = $row;
     }
 
     // Get language from the user table
-    $stmt = $db->prepare("SELECT language FROM user WHERE id = :user_id");
-    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $userLanguage = $result->fetchArray(SQLITE3_ASSOC)['language'] ?? 'en';
+    $stmt = $pdo->prepare("SELECT language FROM users WHERE id = :user_id");
+    $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    $stmt->execute();
+    $userLanguage = $stmt->fetch(PDO::FETCH_ASSOC)['language'] ?? 'en';
 
     // Get name from includes/i18n/languages.php
     require_once '../../includes/i18n/languages.php';
     $userLanguageName = $languages[$userLanguage]['name'] ?? 'English';
 
     // Get subscriptions from the database for user with ID 1
-    $stmt = $db->prepare("SELECT * FROM subscriptions WHERE user_id = :user_id AND inactive = 0");
-    $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare("SELECT * FROM subscriptions WHERE user_id = :user_id AND inactive = 0");
+    $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
     $subscriptions = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $subscriptions[] = $row;
     }
 
@@ -284,22 +284,22 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
     if (json_last_error() === JSON_ERROR_NONE && is_array($recommendations)) {
         // Remove old recommendations for this user
-        $stmt = $db->prepare("DELETE FROM ai_recommendations WHERE user_id = :user_id");
-        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+        $stmt = $pdo->prepare("DELETE FROM ai_recommendations WHERE user_id = :user_id");
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
         $stmt->execute();
 
         // Insert each new recommendation
-        $insert = $db->prepare("
+        $insert = $pdo->prepare("
             INSERT INTO ai_recommendations (user_id, type, title, description, savings)
             VALUES (:user_id, :type, :title, :description, :savings)
         ");
 
         foreach ($recommendations as $rec) {
-            $insert->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-            $insert->bindValue(':type', 'subscription', SQLITE3_TEXT); // or any category you want
-            $insert->bindValue(':title', $rec['title'] ?? '', SQLITE3_TEXT);
-            $insert->bindValue(':description', $rec['description'] ?? '', SQLITE3_TEXT);
-            $insert->bindValue(':savings', $rec['savings'] ?? '', SQLITE3_TEXT);
+            $insert->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            $insert->bindValue(':type', 'subscription', PDO::PARAM_STR); // or any category you want
+            $insert->bindValue(':title', $rec['title'] ?? '', PDO::PARAM_STR);
+            $insert->bindValue(':description', $rec['description'] ?? '', PDO::PARAM_STR);
+            $insert->bindValue(':savings', $rec['savings'] ?? '', PDO::PARAM_STR);
             $insert->execute();
         }
 

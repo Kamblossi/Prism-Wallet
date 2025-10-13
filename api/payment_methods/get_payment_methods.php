@@ -88,11 +88,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
 
 
     // Get user from API key
-    $sql = "SELECT * FROM user WHERE api_key = :apiKey";
-    $stmt = $db->prepare($sql);
+    $sql = "SELECT * FROM users WHERE api_key = :apiKey";
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':apiKey', $apiKey);
-    $result = $stmt->execute();
-    $user = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // If the user is not found, return an error
     if (!$user) {
@@ -107,11 +107,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     $userId = $user['id'];
 
     $sql = "SELECT * FROM payment_methods WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
+    $stmt->execute();
     $payment_methods = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $payment_methods[] = $row;
     }
 
@@ -119,11 +119,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         unset($payment_methods[$key]['user_id']);
         // Check if is used in any subscriptions
         $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND payment_method_id = :paymentMethodId";
-        $stmt = $db->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':userId', $userId);
         $stmt->bindValue(':paymentMethodId', $payment_methods[$key]['id']);
-        $result = $stmt->execute();
-        $subscription = $result->fetchArray(SQLITE3_ASSOC);
+        $stmt->execute();
+        $subscription = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($subscription) {
             $payment_methods[$key]['in_use'] = true;
         } else {

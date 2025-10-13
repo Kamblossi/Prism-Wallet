@@ -69,10 +69,10 @@ function getPriceConverted($price, $currency, $database)
 {
     $query = "SELECT rate FROM currencies WHERE id = :currency";
     $stmt = $database->prepare($query);
-    $stmt->bindParam(':currency', $currency, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt->bindParam(':currency', $currency, PDO::PARAM_INT);
+    $stmt->execute();
 
-    $exchangeRate = $result->fetchArray(SQLITE3_ASSOC);
+    $exchangeRate = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($exchangeRate === false) {
         return $price;
     } else {
@@ -363,11 +363,11 @@ function printSubscriptions($subscriptions, $sort, $categories, $members, $i18n,
     }
 }
 
-$query = "SELECT main_currency FROM user WHERE id = :userId";
-$stmt = $db->prepare($query);
-$stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-$result = $stmt->execute();
-$row = $result->fetchArray(SQLITE3_ASSOC);
+$query = "SELECT main_currency FROM users WHERE id = :userId";
+$stmt = $pdo->prepare($query);
+$stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+$stmt->execute();
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
 if ($row !== false) {
     $mainCurrencyId = $row['main_currency'];
 } else {

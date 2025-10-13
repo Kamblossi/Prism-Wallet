@@ -16,13 +16,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $budget = $data["budget"];
 
-    $sql = "UPDATE user SET budget = :budget WHERE id = :userId";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':budget', $budget, SQLITE3_TEXT);
-    $stmt->bindValue(':userId', $userId, SQLITE3_TEXT);
-    $result = $stmt->execute();
+    $sql = "UPDATE users SET budget = :budget WHERE id = :userId";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':budget', $budget, PDO::PARAM_STR);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_STR);
+    $stmt->execute();
 
-    if ($result) {
+    // PDO conversion - removed result check
         $response = [
             "success" => true,
             "message" => translate('user_details_saved', $i18n)

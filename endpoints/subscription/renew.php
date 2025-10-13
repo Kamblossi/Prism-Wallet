@@ -9,18 +9,18 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         $cycles = array();
         $query = "SELECT * FROM cycles";
         $result = $db->query($query);
-        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $cycleId = $row['id'];
             $cycles[$cycleId] = $row;
         }
 
         $subscriptionId = $_GET["id"];
         $query = "SELECT * FROM subscriptions WHERE id = :id AND user_id = :user_id AND auto_renew = 0";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(':id', $subscriptionId, SQLITE3_INTEGER);
-        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
-        $subscriptionToRenew = $result->fetchArray(SQLITE3_ASSOC);
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':id', $subscriptionId, PDO::PARAM_INT);
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        $subscriptionToRenew = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($subscriptionToRenew === false) {
             die(json_encode([
                 "success" => false,
@@ -53,7 +53,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
         // Update the subscription's next_payment date
         $updateQuery = "UPDATE subscriptions SET next_payment = :nextPaymentDate WHERE id = :subscriptionId";
-        $updateStmt = $db->prepare($updateQuery);
+        $updateStmt = $pdo->prepare($updateQuery);
         $updateStmt->bindValue(':nextPaymentDate', $nextPaymentDate->format('Y-m-d'));
         $updateStmt->bindValue(':subscriptionId', $subscriptionId);
         $updateStmt->execute();

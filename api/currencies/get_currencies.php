@@ -66,11 +66,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
 
 
     // Get user from API key
-    $sql = "SELECT * FROM user WHERE api_key = :apiKey";
-    $stmt = $db->prepare($sql);
+    $sql = "SELECT * FROM users WHERE api_key = :apiKey";
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':apiKey', $apiKey);
-    $result = $stmt->execute();
-    $user = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // If the user is not found, return an error
     if (!$user) {
@@ -85,11 +85,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     $userId = $user['id'];
 
     $sql = "SELECT * FROM currencies WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
+    $stmt->execute();
     $currencies = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $currencies[] = $row;
     }
 
@@ -98,11 +98,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         // Check if it's in use in any subscription
         $currencyId = $currencies[$key]['id'];
         $sql = "SELECT COUNT(*) as count FROM subscriptions WHERE user_id = :userId AND currency_id = :currencyId";
-        $stmt = $db->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':currencyId', $currencyId);
         $stmt->bindValue(':userId', $userId);
-        $result = $stmt->execute();
-        $count = $result->fetchArray(SQLITE3_ASSOC);
+        $stmt->execute();
+        $count = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($count['count'] > 0) {
             $currencies[$key]['in_use'] = true;
         } else {

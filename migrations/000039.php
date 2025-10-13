@@ -4,7 +4,7 @@
 // This migration also adds a "ai_recommendations" table to store AI recommendations.
 
 $columnQuery = $db->query("SELECT * FROM pragma_table_info('oauth_settings') WHERE name='password_login_disabled'");
-$columnRequired = $columnQuery->fetchArray(SQLITE3_ASSOC) === false;
+$columnRequired = $columnQuery->fetch(PDO::FETCH_ASSOC) === false;
 
 if ($columnRequired) {
     $db->exec("ALTER TABLE oauth_settings ADD COLUMN password_login_disabled INTEGER DEFAULT 0");
@@ -12,7 +12,7 @@ if ($columnRequired) {
 
 // Check if ai_settings table exists, if not, create it
 $tableQuery = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='ai_settings'");
-$tableExists = $tableQuery->fetchArray(SQLITE3_ASSOC);
+$tableExists = $tableQuery->fetch(PDO::FETCH_ASSOC);
 
 if ($tableExists === false) {
     $db->exec("
@@ -34,7 +34,7 @@ if ($tableExists === false) {
 
 // Check if ai_recommendations table exists, if not, create it
 $tableQuery = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='ai_recommendations'");
-$tableExists = $tableQuery->fetchArray(SQLITE3_ASSOC);
+$tableExists = $tableQuery->fetch(PDO::FETCH_ASSOC);
 
 if ($tableExists === false) {
     $db->exec("

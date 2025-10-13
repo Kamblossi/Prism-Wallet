@@ -230,9 +230,9 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         }
 
         // Get the maximum existing ID
-        $stmt = $db->prepare("SELECT MAX(id) as maxID FROM payment_methods");
-        $result = $stmt->execute();
-        $row = $result->fetchArray(SQLITE3_ASSOC);
+        $stmt = $pdo->prepare("SELECT MAX(id) as maxID FROM payment_methods");
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $maxID = $row['maxID'];
 
         // Ensure the new ID is greater than 31
@@ -240,13 +240,13 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
         // Insert the new record with the new ID
         $sql = "INSERT INTO payment_methods (id, name, icon, enabled, user_id) VALUES (:id, :name, :icon, :enabled, :userId)";
-        $stmt = $db->prepare($sql);
+        $stmt = $pdo->prepare($sql);
 
-        $stmt->bindParam(':id', $newID, SQLITE3_INTEGER);
-        $stmt->bindParam(':name', $name, SQLITE3_TEXT);
-        $stmt->bindParam(':icon', $icon, SQLITE3_TEXT);
-        $stmt->bindParam(':enabled', $enabled, SQLITE3_INTEGER);
-        $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+        $stmt->bindParam(':id', $newID, PDO::PARAM_INT);
+        $stmt->bindParam(':name', $name, PDO::PARAM_STR);
+        $stmt->bindParam(':icon', $icon, PDO::PARAM_STR);
+        $stmt->bindParam(':enabled', $enabled, PDO::PARAM_INT);
+        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
 
         if ($stmt->execute()) {
             $success['success'] = true;

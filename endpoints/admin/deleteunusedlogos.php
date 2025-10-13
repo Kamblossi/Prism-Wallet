@@ -18,11 +18,11 @@ if ($userId !== 1) {
 }
 
 $query = 'SELECT logo FROM subscriptions';
-$stmt = $db->prepare($query);
-$result = $stmt->execute();
+$stmt = $pdo->prepare($query);
+$stmt->execute();
 
 $logosOnDB = [];
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $logosOnDB[] = $row['logo'];
 }
 
@@ -39,10 +39,10 @@ foreach ($uploadFiles as $file) {
 
  // Get all logos in the payment_methods table
  $query = 'SELECT icon FROM payment_methods';
- $stmt = $db->prepare($query);
- $result = $stmt->execute();
+ $stmt = $pdo->prepare($query);
+ $stmt->execute();
 
- while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
      if (!strstr($row['icon'], "images/uploads/icons/")) {
          $logosOnDB[] = $row['icon'];
      }

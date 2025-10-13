@@ -5,7 +5,7 @@
 
 $columnQuery = $db->query("SELECT * FROM pragma_table_info('user') where name='totp_enabled'");
 
-$columnRequired = $columnQuery->fetchArray(SQLITE3_ASSOC) === false;
+$columnRequired = $columnQuery->fetch(PDO::FETCH_ASSOC) === false;
 
 if ($columnRequired) {
     $db->exec('ALTER TABLE user ADD COLUMN totp_enabled BOOLEAN DEFAULT 0');

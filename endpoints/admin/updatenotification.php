@@ -25,11 +25,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $updateNotification = $data['notificationEnabled'];
 
     // Save settings
-    $stmt = $db->prepare('UPDATE admin SET update_notification = :update_notification');
-    $stmt->bindValue(':update_notification', $updateNotification, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare('UPDATE admin SET update_notification = :update_notification');
+    $stmt->bindValue(':update_notification', $updateNotification, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($result) {
+    // PDO conversion - removed result check
         die(json_encode([
             "success" => true,
             "message" => translate('success', $i18n)

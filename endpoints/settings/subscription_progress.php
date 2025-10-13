@@ -22,9 +22,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         ]));
     }
 
-    $stmt = $db->prepare('UPDATE settings SET show_subscription_progress = :show_subscription_progress WHERE user_id = :userId');
-    $stmt->bindParam(':show_subscription_progress', $show_subscription_progress, SQLITE3_INTEGER);
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+    $stmt = $pdo->prepare('UPDATE settings SET show_subscription_progress = :show_subscription_progress WHERE user_id = :userId');
+    $stmt->bindParam(':show_subscription_progress', $show_subscription_progress, PDO::PARAM_INT);
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
         die(json_encode([

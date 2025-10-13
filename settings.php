@@ -3,10 +3,10 @@ require_once 'includes/header.php';
 
 $currencies = array();
 $query = "SELECT * FROM currencies WHERE user_id = :userId";
-$query = $db->prepare($query);
-$query->bindValue(':userId', $userId, SQLITE3_INTEGER);
-$result = $query->execute();
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+$stmt = $pdo->prepare($query);
+$stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+$stmt->execute();
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $currencyId = $row['id'];
     $currencies[$currencyId] = $row;
 }
@@ -43,15 +43,13 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     <?php
     $sql = "SELECT * FROM household WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($result) {
-        $household = array();
-        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-            $household[] = $row;
-        }
+    $household = array();
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $household[] = $row;
     }
     ?>
 
@@ -115,12 +113,12 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
     <?php
     // Notification settings
     $sql = "SELECT * FROM notification_settings WHERE user_id = :userId LIMIT 1";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
     $rowCount = 0;
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $notifications = $row;
         $rowCount++;
     }
@@ -131,12 +129,12 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     // Email notifications
     $sql = "SELECT * FROM email_notifications WHERE user_id = :userId LIMIT 1";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
     $rowCount = 0;
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $notificationsEmail['enabled'] = $row['enabled'];
         $notificationsEmail['smtp_address'] = $row['smtp_address'];
         $notificationsEmail['smtp_port'] = $row['smtp_port'];
@@ -161,12 +159,12 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     // Discord notifications
     $sql = "SELECT * FROM discord_notifications WHERE user_id = :userId LIMIT 1";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
     $rowCount = 0;
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $notificationsDiscord['enabled'] = $row['enabled'];
         $notificationsDiscord['webhook_url'] = $row['webhook_url'];
         $notificationsDiscord['bot_username'] = $row['bot_username'];
@@ -183,12 +181,12 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     // Pushover notifications
     $sql = "SELECT * FROM pushover_notifications WHERE user_id = :userId LIMIT 1";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
     $rowCount = 0;
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $notificationsPushover['enabled'] = $row['enabled'];
         $notificationsPushover['token'] = $row['token'];
         $notificationsPushover['user_key'] = $row['user_key'];
@@ -203,12 +201,12 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     // Telegram notifications
     $sql = "SELECT * FROM telegram_notifications WHERE user_id = :userId LIMIT 1";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
     $rowCount = 0;
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $notificationsTelegram['enabled'] = $row['enabled'];
         $notificationsTelegram['bot_token'] = $row['bot_token'];
         $notificationsTelegram['chat_id'] = $row['chat_id'];
@@ -224,12 +222,12 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     // PushPlus notifications
     $sql = "SELECT * FROM pushplus_notifications WHERE user_id = :userId LIMIT 1";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
     $rowCount = 0;
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $notificationsPushPlus['enabled'] = $row['enabled'];
         $notificationsPushPlus['token'] = $row['token'];
         $rowCount++;
@@ -242,12 +240,12 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     // Ntfy notifications
     $sql = "SELECT * FROM ntfy_notifications WHERE user_id = :userId LIMIT 1";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
     $rowCount = 0;
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $notificationsNtfy['enabled'] = $row['enabled'];
         $notificationsNtfy['host'] = $row['host'];
         $notificationsNtfy['topic'] = $row['topic'];
@@ -266,11 +264,11 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     // Webhook notifications
     $sql = "SELECT * FROM webhook_notifications WHERE user_id = :userId LIMIT 1";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
     $rowCount = 0;
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $notificationsWebhook['enabled'] = $row['enabled'];
         $notificationsWebhook['url'] = $row['url'];
         $notificationsWebhook['request_method'] = $row['request_method'];
@@ -304,12 +302,12 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     // Gotify notifications
     $sql = "SELECT * FROM gotify_notifications WHERE user_id = :userId LIMIT 1";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
     $rowCount = 0;
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $notificationsGotify['enabled'] = $row['enabled'];
         $notificationsGotify['url'] = $row['url'];
         $notificationsGotify['token'] = $row['token'];
@@ -702,13 +700,13 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     <?php
     $sql = "SELECT * FROM categories WHERE user_id = :userId ORDER BY `order` ASC";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($result) {
+    // PDO conversion - removed result check
         $categories = array();
-        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $categories[] = $row;
         }
     }
@@ -726,11 +724,11 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
                         $canDelete = true;
 
                         $query = "SELECT COUNT(*) as count FROM subscriptions WHERE category_id = :categoryId AND user_id = :userId";
-                        $stmt = $db->prepare($query);
-                        $stmt->bindParam(':categoryId', $category['id'], SQLITE3_INTEGER);
-                        $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-                        $result = $stmt->execute();
-                        $row = $result->fetchArray(SQLITE3_ASSOC);
+                        $stmt = $pdo->prepare($query);
+                        $stmt->bindParam(':categoryId', $category['id'], PDO::PARAM_INT);
+                        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+                        $stmt->execute();
+                        $row = $stmt->fetch(PDO::FETCH_ASSOC);
                         $isUsed = $row['count'];
 
                         if ($isUsed > 0) {
@@ -776,22 +774,22 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     <?php
     $sql = "SELECT * FROM currencies WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($result) {
+    // PDO conversion - removed result check
         $currencies = array();
-        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $currencies[] = $row;
         }
     }
 
-    $query = "SELECT main_currency FROM user WHERE id = :userId";
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $query = "SELECT main_currency FROM users WHERE id = :userId";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
     $mainCurrencyId = $row['main_currency'];
 
     $query = "SELECT date FROM last_exchange_update";
@@ -814,10 +812,10 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
                         $isMainCurrency = true;
                     } else {
                         $query = "SELECT COUNT(*) as count FROM subscriptions WHERE currency_id = :currencyId";
-                        $stmt = $db->prepare($query);
-                        $stmt->bindParam(':currencyId', $currency['id'], SQLITE3_INTEGER);
-                        $result = $stmt->execute();
-                        $row = $result->fetchArray(SQLITE3_ASSOC);
+                        $stmt = $pdo->prepare($query);
+                        $stmt->bindParam(':currencyId', $currency['id'], PDO::PARAM_INT);
+                        $stmt->execute();
+                        $row = $stmt->fetch(PDO::FETCH_ASSOC);
                         $isUsed = $row['count'];
 
                         if ($isUsed > 0) {
@@ -890,11 +888,11 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
     <?php
     $apiKey = "";
     $sql = "SELECT api_key, provider FROM fixer WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    if ($result) {
-        $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
+    // PDO conversion - removed result check
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($row) {
             $apiKey = $row['api_key'];
             $provider = $row['provider'];
@@ -951,12 +949,12 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     <?php
     $sql = "SELECT * FROM ai_settings WHERE user_id = :userId LIMIT 1";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
     $aiSettings = [];
-    if ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    if ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $aiSettings = $row;
     }
     ?>
@@ -1036,13 +1034,13 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
 
     <?php
     $sql = "SELECT * FROM payment_methods WHERE user_id = :userId ORDER BY `order` ASC";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($result) {
+    // PDO conversion - removed result check
         $payments = array();
-        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $payments[] = $row;
         }
     }
@@ -1054,12 +1052,12 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
         </header>
         <div class="payments-list" id="payments-list">
             <?php
-            $paymentsInUseQuery = $db->prepare('SELECT id FROM payment_methods WHERE user_id = :userId AND id IN (SELECT DISTINCT payment_method_id FROM subscriptions WHERE user_id = :userId)');
-            $paymentsInUseQuery->bindValue(':userId', $userId, SQLITE3_INTEGER);
+            $paymentsInUseQuery = $pdo->prepare('SELECT id FROM payment_methods WHERE user_id = :userId AND id IN (SELECT DISTINCT payment_method_id FROM subscriptions WHERE user_id = :userId)');
+            $paymentsInUseQuery->bindValue(':userId', $userId, PDO::PARAM_INT);
             $result = $paymentsInUseQuery->execute();
 
             $paymentsInUse = [];
-            while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                 $paymentsInUse[] = $row['id'];
             }
 

@@ -42,7 +42,7 @@ $db->exec('CREATE TABLE IF NOT EXISTS notification_settings (
 
 // Check if old email notifications table has data and migrate it
 $result = $db->query('SELECT COUNT(*) as count FROM notifications');
-$row = $result->fetchArray(SQLITE3_ASSOC);
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($row['count'] > 0) {
     // Copy data from notifications to email_notifications

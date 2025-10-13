@@ -4,7 +4,7 @@
 // This migration adds a auto_renew column to the subscriptions table to store if the subscription renews automatically or needs manual renewal
 
 $tableQuery = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='total_yearly_cost'");
-$tableRequired = $tableQuery->fetchArray(SQLITE3_ASSOC) === false;
+$tableRequired = $tableQuery->fetch(PDO::FETCH_ASSOC) === false;
 
 if ($tableRequired) {
     $db->exec('CREATE TABLE total_yearly_cost (
@@ -18,7 +18,7 @@ if ($tableRequired) {
 
 $columnQuery = $db->query("PRAGMA table_info(subscriptions)");
 $columns = [];
-while ($column = $columnQuery->fetchArray(SQLITE3_ASSOC)) {
+while ($column = $columnQuery->fetch(PDO::FETCH_ASSOC)) {
     $columns[] = $column['name'];
 }
 

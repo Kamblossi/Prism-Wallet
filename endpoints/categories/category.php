@@ -4,10 +4,10 @@ require_once '../../includes/inputvalidation.php';
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     if (isset($_GET['action']) && $_GET['action'] == "add") {
-        $stmt = $db->prepare('SELECT MAX("order") as maxOrder FROM categories WHERE user_id = :userId');
-        $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
-        $row = $result->fetchArray(SQLITE3_ASSOC);
+        $stmt = $pdo->prepare('SELECT MAX("order") as maxOrder FROM categories WHERE user_id = :userId');
+        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $maxOrder = $row['maxOrder'];
 
         if ($maxOrder === NULL) {
@@ -18,10 +18,10 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
         $categoryName = "Category";
         $sqlInsert = 'INSERT INTO categories ("name", "order", "user_id") VALUES (:name, :order, :userId)';
-        $stmtInsert = $db->prepare($sqlInsert);
-        $stmtInsert->bindParam(':name', $categoryName, SQLITE3_TEXT);
-        $stmtInsert->bindParam(':order', $order, SQLITE3_INTEGER);
-        $stmtInsert->bindParam(':userId', $userId, SQLITE3_INTEGER);
+        $stmtInsert = $pdo->prepare($sqlInsert);
+        $stmtInsert->bindParam(':name', $categoryName, PDO::PARAM_STR);
+        $stmtInsert->bindParam(':order', $order, PDO::PARAM_INT);
+        $stmtInsert->bindParam(':userId', $userId, PDO::PARAM_INT);
         $resultInsert = $stmtInsert->execute();
 
         if ($resultInsert) {
@@ -43,13 +43,13 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             $categoryId = $_GET['categoryId'];
             $name = validate($_GET['name']);
             $sql = "UPDATE categories SET name = :name WHERE id = :categoryId AND user_id = :userId";
-            $stmt = $db->prepare($sql);
-            $stmt->bindParam(':name', $name, SQLITE3_TEXT);
-            $stmt->bindParam(':categoryId', $categoryId, SQLITE3_INTEGER);
-            $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-            $result = $stmt->execute();
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindParam(':name', $name, PDO::PARAM_STR);
+            $stmt->bindParam(':categoryId', $categoryId, PDO::PARAM_INT);
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
 
-            if ($result) {
+            // PDO conversion - removed result check
                 $response = [
                     "success" => true,
                     "message" => translate('category_saved', $i18n)
@@ -73,9 +73,9 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         if (isset($_GET['categoryId']) && $_GET['categoryId'] != "" && $_GET['categoryId'] != 1) {
             $categoryId = $_GET['categoryId'];
             $checkCategory = "SELECT COUNT(*) FROM subscriptions WHERE category_id = :categoryId AND user_id = :userId";
-            $checkStmt = $db->prepare($checkCategory);
-            $checkStmt->bindParam(':categoryId', $categoryId, SQLITE3_INTEGER);
-            $checkStmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+            $checkStmt = $pdo->prepare($checkCategory);
+            $checkStmt->bindParam(':categoryId', $categoryId, PDO::PARAM_INT);
+            $checkStmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             $checkResult = $checkStmt->execute();
             $row = $checkResult->fetchArray();
             $count = $row[0];
@@ -88,11 +88,11 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
                 echo json_encode($response);
             } else {
                 $sql = "DELETE FROM categories WHERE id = :categoryId AND user_id = :userId";
-                $stmt = $db->prepare($sql);
-                $stmt->bindParam(':categoryId', $categoryId, SQLITE3_INTEGER);
-                $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-                $result = $stmt->execute();
-                if ($result) {
+                $stmt = $pdo->prepare($sql);
+                $stmt->bindParam(':categoryId', $categoryId, PDO::PARAM_INT);
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+                $stmt->execute();
+                // PDO conversion - removed result check
                     $response = [
                         "success" => true,
                         "message" => translate('category_removed', $i18n)

@@ -34,11 +34,11 @@ function getPriceConverted($price, $currency, $database, $userId)
 {
   $query = "SELECT rate FROM currencies WHERE id = :currency AND user_id = :userId";
   $stmt = $database->prepare($query);
-  $stmt->bindParam(':currency', $currency, SQLITE3_INTEGER);
-  $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-  $result = $stmt->execute();
+  $stmt->bindParam(':currency', $currency, PDO::PARAM_INT);
+  $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+  $stmt->execute();
 
-  $exchangeRate = $result->fetchArray(SQLITE3_ASSOC);
+  $exchangeRate = $stmt->fetch(PDO::FETCH_ASSOC);
   if ($exchangeRate === false) {
     return $price;
   } else {
@@ -50,31 +50,31 @@ function getPriceConverted($price, $currency, $database, $userId)
 // Get all users
 
 $query = "SELECT id, main_currency FROM user";
-$stmt = $db->prepare($query);
-$result = $stmt->execute();
+$stmt = $pdo->prepare($query);
+$stmt->execute();
 
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $userId = $row['id'];
     $userCurrencyId = $row['main_currency'];
     $totalYearlyCost = 0;
 
     $query = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = 0";
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
     $resultSubscriptions = $stmt->execute();
 
-    while ($rowSubscriptions = $resultSubscriptions->fetchArray(SQLITE3_ASSOC)) {
+    while ($rowSubscriptions = $resultSubscriptions->fetch(PDO::FETCH_ASSOC)) {
         $originalSubscriptionPrice = getPriceConverted($rowSubscriptions['price'], $rowSubscriptions['currency_id'], $db, $userId);
         $price = getPricePerMonth($rowSubscriptions['cycle'], $rowSubscriptions['frequency'], $originalSubscriptionPrice) * 12;
         $totalYearlyCost += $price;
     }
 
     $query = "INSERT INTO total_yearly_cost (user_id, date, cost, currency) VALUES (:userId, :date, :cost, :currency)";
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-    $stmt->bindParam(':date', $currentDateString, SQLITE3_TEXT);
-    $stmt->bindParam(':cost', $totalYearlyCost, SQLITE3_FLOAT);
-    $stmt->bindParam(':currency', $userCurrencyId, SQLITE3_INTEGER);
+    $stmt = $pdo->prepare($query);
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+    $stmt->bindParam(':date', $currentDateString, PDO::PARAM_STR);
+    $stmt->bindParam(':cost', $totalYearlyCost, PDO::PARAM_STR);
+    $stmt->bindParam(':currency', $userCurrencyId, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
         echo "Inserted total yearly cost for user " . $userId . " with cost " . $totalYearlyCost . "<br />\n";

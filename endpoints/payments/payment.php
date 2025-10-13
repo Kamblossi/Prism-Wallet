@@ -17,10 +17,10 @@ if (!isset($_GET['paymentId']) || !isset($_GET['enabled'])) {
 
 $paymentId = $_GET['paymentId'];
 
-$stmt = $db->prepare('SELECT COUNT(*) as count FROM subscriptions WHERE payment_method_id=:paymentId and user_id=:userId');
-$stmt->bindValue(':paymentId', $paymentId, SQLITE3_INTEGER);
-$stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-$result = $stmt->execute();
+$stmt = $pdo->prepare('SELECT COUNT(*) as count FROM subscriptions WHERE payment_method_id=:paymentId and user_id=:userId');
+$stmt->bindValue(':paymentId', $paymentId, PDO::PARAM_INT);
+$stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+$stmt->execute();
 $row = $result->fetchArray();
 $inUse = $row['count'] === 1;
 
@@ -34,7 +34,7 @@ if ($inUse) {
 $enabled = $_GET['enabled'];
 
 $sqlUpdate = 'UPDATE payment_methods SET enabled=:enabled WHERE id=:id and user_id=:userId';
-$stmtUpdate = $db->prepare($sqlUpdate);
+$stmtUpdate = $pdo->prepare($sqlUpdate);
 $stmtUpdate->bindParam(':enabled', $enabled);
 $stmtUpdate->bindParam(':id', $paymentId);
 $stmtUpdate->bindParam(':userId', $userId);

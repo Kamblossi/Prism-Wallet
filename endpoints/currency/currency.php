@@ -9,12 +9,12 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         $currencyCode = "CODE";
         $currencyRate = 1;
         $sqlInsert = "INSERT INTO currencies (name, symbol, code, rate, user_id) VALUES (:name, :symbol, :code, :rate, :userId)";
-        $stmtInsert = $db->prepare($sqlInsert);
-        $stmtInsert->bindParam(':name', $currencyName, SQLITE3_TEXT);
-        $stmtInsert->bindParam(':symbol', $currencySymbol, SQLITE3_TEXT);
-        $stmtInsert->bindParam(':code', $currencyCode, SQLITE3_TEXT);
-        $stmtInsert->bindParam(':rate', $currencyRate, SQLITE3_TEXT);
-        $stmtInsert->bindParam(':userId', $userId, SQLITE3_INTEGER);
+        $stmtInsert = $pdo->prepare($sqlInsert);
+        $stmtInsert->bindParam(':name', $currencyName, PDO::PARAM_STR);
+        $stmtInsert->bindParam(':symbol', $currencySymbol, PDO::PARAM_STR);
+        $stmtInsert->bindParam(':code', $currencyCode, PDO::PARAM_STR);
+        $stmtInsert->bindParam(':rate', $currencyRate, PDO::PARAM_STR);
+        $stmtInsert->bindParam(':userId', $userId, PDO::PARAM_INT);
         $resultInsert = $stmtInsert->execute();
 
         if ($resultInsert) {
@@ -30,15 +30,15 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             $symbol = validate($_GET['symbol']);
             $code = validate($_GET['code']);
             $sql = "UPDATE currencies SET name = :name, symbol = :symbol, code = :code WHERE id = :currencyId AND user_id = :userId";
-            $stmt = $db->prepare($sql);
-            $stmt->bindParam(':name', $name, SQLITE3_TEXT);
-            $stmt->bindParam(':symbol', $symbol, SQLITE3_TEXT);
-            $stmt->bindParam(':code', $code, SQLITE3_TEXT);
-            $stmt->bindParam(':currencyId', $currencyId, SQLITE3_INTEGER);
-            $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-            $result = $stmt->execute();
+            $stmt = $pdo->prepare($sql);
+            $stmt->bindParam(':name', $name, PDO::PARAM_STR);
+            $stmt->bindParam(':symbol', $symbol, PDO::PARAM_STR);
+            $stmt->bindParam(':code', $code, PDO::PARAM_STR);
+            $stmt->bindParam(':currencyId', $currencyId, PDO::PARAM_INT);
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
 
-            if ($result) {
+            // PDO conversion - removed result check
                 $response = [
                     "success" => true,
                     "message" => $name . " " . translate('currency_saved', $i18n)
@@ -60,18 +60,18 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         }
     } else if (isset($_GET['action']) && $_GET['action'] == "delete") {
         if (isset($_GET['currencyId']) && $_GET['currencyId'] != "") {
-            $query = "SELECT main_currency FROM user WHERE id = :userId";
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-            $result = $stmt->execute();
-            $row = $result->fetchArray(SQLITE3_ASSOC);
+            $query = "SELECT main_currency FROM users WHERE id = :userId";
+            $stmt = $pdo->prepare($query);
+            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+            $stmt->execute();
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
             $mainCurrencyId = $row['main_currency'];
 
             $currencyId = $_GET['currencyId'];
             $checkQuery = "SELECT COUNT(*) FROM subscriptions WHERE currency_id = :currencyId AND user_id = :userId";
-            $checkStmt = $db->prepare($checkQuery);
-            $checkStmt->bindParam(':currencyId', $currencyId, SQLITE3_INTEGER);
-            $checkStmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+            $checkStmt = $pdo->prepare($checkQuery);
+            $checkStmt->bindParam(':currencyId', $currencyId, PDO::PARAM_INT);
+            $checkStmt->bindParam(':userId', $userId, PDO::PARAM_INT);
             $checkResult = $checkStmt->execute();
             $row = $checkResult->fetchArray();
             $count = $row[0];
@@ -93,11 +93,11 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
                     exit;
                 } else {
                     $sql = "DELETE FROM currencies WHERE id = :currencyId AND user_id = :userId";
-                    $stmt = $db->prepare($sql);
-                    $stmt->bindParam(':currencyId', $currencyId, SQLITE3_INTEGER);
-                    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-                    $result = $stmt->execute();
-                    if ($result) {
+                    $stmt = $pdo->prepare($sql);
+                    $stmt->bindParam(':currencyId', $currencyId, PDO::PARAM_INT);
+                    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+                    $stmt->execute();
+                    // PDO conversion - removed result check
                         echo json_encode(["success" => true, "message" => translate('currency_removed', $i18n)]);
                     } else {
                         $response = [

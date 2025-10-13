@@ -24,9 +24,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $color = $data['color'];
 
-    $stmt = $db->prepare('UPDATE settings SET color_theme = :color WHERE user_id = :userId');
-    $stmt->bindParam(':color', $color, SQLITE3_TEXT);
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+    $stmt = $pdo->prepare('UPDATE settings SET color_theme = :color WHERE user_id = :userId');
+    $stmt->bindParam(':color', $color, PDO::PARAM_STR);
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
         die(json_encode([

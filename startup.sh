@@ -60,15 +60,8 @@ touch ~/startup.txt
 # Wait one second before running scripts
 sleep 1
 
-# Create database if it does not exist
-/usr/local/bin/php /var/www/html/endpoints/cronjobs/createdatabase.php
-
-# Perform any database migrations
+# Perform database migrations for PostgreSQL
 /usr/local/bin/php /var/www/html/endpoints/db/migrate.php
-
-# Change permissions on the database directory
-chmod -R 755 /var/www/html/db/
-chown -R www-data:www-data /var/www/html/db/
 
 mkdir -p /var/www/html/images/uploads/logos/avatars
 

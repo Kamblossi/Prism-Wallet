@@ -48,10 +48,10 @@ $invalidTotp = false;
 if (isset($_POST['one-time-code'])) {
     $totp_code = $_POST['one-time-code'];
 
-    $statement = $db->prepare('SELECT totp_secret, backup_codes FROM totp WHERE user_id = :id');
-    $statement->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
+    $statement = $pdo->prepare('SELECT totp_secret, backup_codes FROM totp WHERE user_id = :id');
+    $statement->bindValue(':id', $_SESSION['totp_user_id'], PDO::PARAM_INT);
     $result = $statement->execute();
-    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
     $totp_secret = $row['totp_secret'];
     $backupCodes = json_decode($row['backup_codes'], true);
 
@@ -81,9 +81,9 @@ if (isset($_POST['one-time-code'])) {
             unset($backupCodes[$key]);
             $backupCodes = array_values($backupCodes);
 
-            $statement = $db->prepare('UPDATE totp SET backup_codes = :backup_codes WHERE user_id = :id');
-            $statement->bindValue(':backup_codes', json_encode($backupCodes), SQLITE3_TEXT);
-            $statement->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
+            $statement = $pdo->prepare('UPDATE totp SET backup_codes = :backup_codes WHERE user_id = :id');
+            $statement->bindValue(':backup_codes', json_encode($backupCodes), PDO::PARAM_STR);
+            $statement->bindValue(':id', $_SESSION['totp_user_id'], PDO::PARAM_INT);
             $statement->execute();
 
             $valid = true;
@@ -91,18 +91,18 @@ if (isset($_POST['one-time-code'])) {
             $invalidTotp = true;
         }
     } else {
-        $statement = $db->prepare('UPDATE totp SET last_totp_used = :last_totp_used WHERE user_id = :id');
-        $statement->bindValue(':last_totp_used', time(), SQLITE3_INTEGER);
-        $statement->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
+        $statement = $pdo->prepare('UPDATE totp SET last_totp_used = :last_totp_used WHERE user_id = :id');
+        $statement->bindValue(':last_totp_used', time(), PDO::PARAM_INT);
+        $statement->bindValue(':id', $_SESSION['totp_user_id'], PDO::PARAM_INT);
         $statement->execute();
     }
 
     if ($valid) {
-        $query = "SELECT id, username, main_currency, language FROM user WHERE id = :id";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
-        $result = $stmt->execute();
-        $user = $result->fetchArray(SQLITE3_ASSOC);
+        $query = "SELECT id, username, main_currency, language FROM users WHERE id = :id";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':id', $_SESSION['totp_user_id'], PDO::PARAM_INT);
+        $stmt->execute();
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
         $_SESSION['username'] = $user['username'];
         $_SESSION['loggedin'] = true;
@@ -121,10 +121,10 @@ if (isset($_POST['one-time-code'])) {
         }
 
         $query = "SELECT color_theme FROM settings WHERE user_id = :id";
-        $stmt = $db->prepare($query);
-        $stmt->bindValue(':id', $_SESSION['totp_user_id'], SQLITE3_INTEGER);
-        $result = $stmt->execute();
-        $settings = $result->fetchArray(SQLITE3_ASSOC);
+        $stmt = $pdo->prepare($query);
+        $stmt->bindValue(':id', $_SESSION['totp_user_id'], PDO::PARAM_INT);
+        $stmt->execute();
+        $settings = $stmt->fetch(PDO::FETCH_ASSOC);
         setcookie('colorTheme', $settings['color_theme'], [
             'expires' => $cookieExpire,
             'samesite' => 'Strict'

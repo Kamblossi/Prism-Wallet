@@ -11,9 +11,9 @@ function generate_username_from_email($email)
 }
 
 // get OIDC settings
-$stmt = $db->prepare('SELECT * FROM oauth_settings WHERE id = 1');
-$result = $stmt->execute();
-$oidcSettings = $result->fetchArray(SQLITE3_ASSOC);
+$stmt = $pdo->prepare('SELECT * FROM oauth_settings WHERE id = 1');
+$stmt->execute();
+$oidcSettings = $stmt->fetch(PDO::FETCH_ASSOC);
 
 $tokenUrl = $oidcSettings['token_url'];
 $redirectUri = $oidcSettings['redirect_url'];
@@ -57,10 +57,10 @@ if (!$userInfo || !isset($userInfo[$oidcSettings['user_identifier_field']])) {
 $oidcSub = $userInfo[$oidcSettings['user_identifier_field']];
 
 // Check if sub matches an existing user
-$stmt = $db->prepare('SELECT * FROM user WHERE oidc_sub = :oidcSub');
-$stmt->bindValue(':oidcSub', $oidcSub, SQLITE3_TEXT);
-$result = $stmt->execute();
-$userData = $result->fetchArray(SQLITE3_ASSOC);
+$stmt = $pdo->prepare('SELECT * FROM users WHERE oidc_sub = :oidcSub');
+$stmt->bindValue(':oidcSub', $oidcSub, PDO::PARAM_STR);
+$stmt->execute();
+$userData = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($userData) {
     // User exists, log the user in
@@ -76,15 +76,15 @@ if ($userData) {
         exit();
     }
 
-    $stmt = $db->prepare('SELECT * FROM user WHERE email = :email');
-    $stmt->bindValue(':email', $email, SQLITE3_TEXT);
-    $result = $stmt->execute();
-    $userData = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt = $pdo->prepare('SELECT * FROM users WHERE email = :email');
+    $stmt->bindValue(':email', $email, PDO::PARAM_STR);
+    $stmt->execute();
+    $userData = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($userData) {
         // Update existing user with OIDC sub
-        $stmt = $db->prepare('UPDATE user SET oidc_sub = :oidcSub WHERE id = :userId');
-        $stmt->bindValue(':oidcSub', $oidcSub, SQLITE3_TEXT);
-        $stmt->bindValue(':userId', $userData['id'], SQLITE3_INTEGER);
+        $stmt = $pdo->prepare('UPDATE users SET oidc_sub = :oidcSub WHERE id = :userId');
+        $stmt->bindValue(':oidcSub', $oidcSub, PDO::PARAM_STR);
+        $stmt->bindValue(':userId', $userData['id'], PDO::PARAM_INT);
         $stmt->execute();
 
         // Log the user in
@@ -100,10 +100,10 @@ if ($userData) {
             $attempt = 1;
 
             while (true) {
-                $stmt = $db->prepare('SELECT COUNT(*) as count FROM user WHERE username = :username');
-                $stmt->bindValue(':username', $username, SQLITE3_TEXT);
-                $result = $stmt->execute();
-                $row = $result->fetchArray(SQLITE3_ASSOC);
+                $stmt = $pdo->prepare('SELECT COUNT(*) as count FROM users WHERE username = :username');
+                $stmt->bindValue(':username', $username, PDO::PARAM_STR);
+                $stmt->execute();
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($row['count'] == 0) {
                     break; // Username is available

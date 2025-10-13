@@ -21,10 +21,10 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 
-$statement = $db->prepare('SELECT totp_enabled FROM user WHERE id = :id');
-$statement->bindValue(':id', $userId, SQLITE3_INTEGER);
+$statement = $pdo->prepare('SELECT totp_enabled FROM users WHERE id = :id');
+$statement->bindValue(':id', $userId, PDO::PARAM_INT);
 $result = $statement->execute();
-$row = $result->fetchArray(SQLITE3_ASSOC);
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($row['totp_enabled'] == 0) {
     die(json_encode([
@@ -54,16 +54,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
         $totp_code = $data['totpCode'];
 
-        $statement = $db->prepare('SELECT totp_secret FROM totp WHERE user_id = :id');
-        $statement->bindValue(':id', $userId, SQLITE3_INTEGER);
+        $statement = $pdo->prepare('SELECT totp_secret FROM totp WHERE user_id = :id');
+        $statement->bindValue(':id', $userId, PDO::PARAM_INT);
         $result = $statement->execute();
-        $row = $result->fetchArray(SQLITE3_ASSOC);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $secret = $row['totp_secret'];
 
-        $statement = $db->prepare('SELECT backup_codes FROM totp WHERE user_id = :id');
-        $statement->bindValue(':id', $userId, SQLITE3_INTEGER);
+        $statement = $pdo->prepare('SELECT backup_codes FROM totp WHERE user_id = :id');
+        $statement->bindValue(':id', $userId, PDO::PARAM_INT);
         $result = $statement->execute();
-        $row = $result->fetchArray(SQLITE3_ASSOC);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $backupCodes = $row['backup_codes'];
 
         $clock = new OTPHP\InternalClock();
@@ -71,12 +71,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $totp->setPeriod(30);
 
         if ($totp->verify($totp_code, null, 15)) {
-            $statement = $db->prepare('UPDATE user SET totp_enabled = 0 WHERE id = :id');
-            $statement->bindValue(':id', $userId, SQLITE3_INTEGER);
+            $statement = $pdo->prepare('UPDATE users SET totp_enabled = 0 WHERE id = :id');
+            $statement->bindValue(':id', $userId, PDO::PARAM_INT);
             $statement->execute();
 
-            $statement = $db->prepare('DELETE FROM totp WHERE user_id = :id');
-            $statement->bindValue(':id', $userId, SQLITE3_INTEGER);
+            $statement = $pdo->prepare('DELETE FROM totp WHERE user_id = :id');
+            $statement->bindValue(':id', $userId, PDO::PARAM_INT);
             $statement->execute();
 
             die(json_encode([
@@ -98,12 +98,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             // Search for the normalized code
             if (($key = array_search($totp_code, $normalizedBackupCodes)) !== false) {
                 // Match found, disable TOTP
-                $statement = $db->prepare('UPDATE user SET totp_enabled = 0 WHERE id = :id');
-                $statement->bindValue(':id', $userId, SQLITE3_INTEGER);
+                $statement = $pdo->prepare('UPDATE users SET totp_enabled = 0 WHERE id = :id');
+                $statement->bindValue(':id', $userId, PDO::PARAM_INT);
                 $statement->execute();
 
-                $statement = $db->prepare('DELETE FROM totp WHERE user_id = :id');
-                $statement->bindValue(':id', $userId, SQLITE3_INTEGER);
+                $statement = $pdo->prepare('DELETE FROM totp WHERE user_id = :id');
+                $statement->bindValue(':id', $userId, PDO::PARAM_INT);
                 $statement->execute();
 
                 die(json_encode([

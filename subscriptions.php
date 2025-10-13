@@ -107,21 +107,19 @@ if ($sort != "next_payment") {
 
 $sql .= " ORDER BY " . implode(", ", $orderByClauses);
 
-$stmt = $db->prepare($sql);
-$stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+$stmt = $pdo->prepare($sql);
+$stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
 
 if (!empty($params)) {
   foreach ($params as $key => $value) {
-    $stmt->bindValue($key, $value, SQLITE3_INTEGER);
+    $stmt->bindValue($key, $value, PDO::PARAM_INT);
   }
 }
 
-$result = $stmt->execute();
-if ($result) {
-  $subscriptions = array();
-  while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
-    $subscriptions[] = $row;
-  }
+$stmt->execute();
+$subscriptions = array();
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+  $subscriptions[] = $row;
 }
 
 foreach ($subscriptions as $subscription) {

@@ -15,17 +15,17 @@ $currentDateString = $currentDate->format('Y-m-d');
 $cycles = array();
 $query = "SELECT * FROM cycles";
 $result = $db->query($query);
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $cycleId = $row['id'];
     $cycles[$cycleId] = $row;
 }
 
 $query = "SELECT id, next_payment, frequency, cycle FROM subscriptions WHERE next_payment < :currentDate AND auto_renew = 1 AND inactive = 0";
-$stmt = $db->prepare($query);
+$stmt = $pdo->prepare($query);
 $stmt->bindValue(':currentDate', $currentDate->format('Y-m-d'));
-$result = $stmt->execute();
+$stmt->execute();
 
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $subscriptionId = $row['id'];
     $nextPaymentDate = new DateTime($row['next_payment']);
     $frequency = $row['frequency'];
@@ -52,7 +52,7 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 
     // Update the subscription's next_payment date
     $updateQuery = "UPDATE subscriptions SET next_payment = :nextPaymentDate WHERE id = :subscriptionId";
-    $updateStmt = $db->prepare($updateQuery);
+    $updateStmt = $pdo->prepare($updateQuery);
     $updateStmt->bindValue(':nextPaymentDate', $nextPaymentDate->format('Y-m-d'));
     $updateStmt->bindValue(':subscriptionId', $subscriptionId);
     $updateStmt->execute();
@@ -61,13 +61,13 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 $formattedDate = $currentDate->format('Y-m-d');
 
 $deleteQuery = "DELETE FROM last_update_next_payment_date";
-$deleteStmt = $db->prepare($deleteQuery);
+$deleteStmt = $pdo->prepare($deleteQuery);
 $deleteResult = $deleteStmt->execute();
 
 $query = "INSERT INTO last_update_next_payment_date (date) VALUES (:formattedDate)";
-$stmt = $db->prepare($query);
-$stmt->bindParam(':formattedDate', $currentDateString, SQLITE3_TEXT);
-$result = $stmt->execute();
+$stmt = $pdo->prepare($query);
+$stmt->bindParam(':formattedDate', $currentDateString, PDO::PARAM_STR);
+$stmt->execute();
 
 echo "Updated next payment dates";
 ?>

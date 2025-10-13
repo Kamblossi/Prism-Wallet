@@ -86,10 +86,10 @@ require_once 'includes/header.php';
                         <?php
                         $currencies = array();
                         $query = "SELECT * FROM currencies WHERE user_id = :userId";
-                        $query = $db->prepare($query);
-                        $query->bindValue(':userId', $userId, SQLITE3_INTEGER);
+                        $query = $pdo->prepare($query);
+                        $query->bindValue(':userId', $userId, PDO::PARAM_INT);
                         $result = $query->execute();
-                        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+                        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                             $currencyId = $row['id'];
                             $currencies[$currencyId] = $row;
                         }
@@ -137,9 +137,9 @@ require_once 'includes/header.php';
 
     <?php
     $sql = "SELECT login_disabled FROM admin";
-    $stmt = $db->prepare($sql);
-    $result = $stmt->execute();
-    $row = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute();
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
     $loginDisabled = $row['login_disabled'];
 
     $showTotpSection = true;

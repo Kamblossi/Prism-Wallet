@@ -87,7 +87,7 @@ See instructions to run Wallos below.
     - imagick
     - intl
     - openssl
-    - sqlite3
+    - pdo_pgsql (PostgreSQL)
     - zip
 
 #### Docker
@@ -99,8 +99,8 @@ See instructions to run Wallos below.
 #### Baremetal
 
 1. Download or clone this repo and move the files into your web root - usually `/var/www/html`
-2. Rename `/db/wallos.empty.db` to `/db/wallos.db`
-3. Run `http://domain.example/endpoints/db/migrate.php` on your browser
+2. Ensure your PostgreSQL database is reachable via env vars: `DB_HOST`, `DB_PORT` (default 5432), `DB_NAME`, `DB_USER`, `DB_PASSWORD`.
+3. Run `http://domain.example/endpoints/db/migrate.php` in your browser to create/upgrade schema.
 4. Add the following scripts to your cronjobs with `crontab -e`
 
 ```bash
@@ -154,7 +154,6 @@ services:
       TZ: 'America/Toronto'
     # Volumes store your data between container upgrades
     volumes:
-      - './db:/var/www/html/db'
       - './logos:/var/www/html/images/uploads/logos'
     restart: unless-stopped
 ```
@@ -171,7 +170,6 @@ services:
     environment:
       TZ: 'America/Toronto'
     volumes:
-      - './db:/var/www/html/db'
       - './logos:/var/www/html/images/uploads/logos'
     restart: unless-stopped
     healthcheck:

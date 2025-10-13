@@ -28,9 +28,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $bot_avatar_url = $data["bot_avatar"];
 
         $query = "SELECT COUNT(*) FROM discord_notifications WHERE user_id = :userId";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(":userId", $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(":userId", $userId, PDO::PARAM_INT);
+        $stmt->execute();
 
         if ($result === false) {
             $response = [
@@ -50,12 +50,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                               WHERE user_id = :userId";
             }
 
-            $stmt = $db->prepare($query);
-            $stmt->bindValue(':enabled', $enabled, SQLITE3_INTEGER);
-            $stmt->bindValue(':webhook_url', $webhook_url, SQLITE3_TEXT);
-            $stmt->bindValue(':bot_username', $bot_username, SQLITE3_TEXT);
-            $stmt->bindValue(':bot_avatar_url', $bot_avatar_url, SQLITE3_TEXT);
-            $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+            $stmt = $pdo->prepare($query);
+            $stmt->bindValue(':enabled', $enabled, PDO::PARAM_INT);
+            $stmt->bindValue(':webhook_url', $webhook_url, PDO::PARAM_STR);
+            $stmt->bindValue(':bot_username', $bot_username, PDO::PARAM_STR);
+            $stmt->bindValue(':bot_avatar_url', $bot_avatar_url, PDO::PARAM_STR);
+            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
 
             if ($stmt->execute()) {
                 $response = [

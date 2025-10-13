@@ -7,14 +7,14 @@ if ($isAdmin != 1) {
 }
 
 // get admin settings from admin table
-$stmt = $db->prepare('SELECT * FROM admin');
-$result = $stmt->execute();
-$settings = $result->fetchArray(SQLITE3_ASSOC);
+$stmt = $pdo->prepare('SELECT * FROM admin');
+$stmt->execute();
+$settings = $stmt->fetch(PDO::FETCH_ASSOC);
 
 // get OIDC settings
-$stmt = $db->prepare('SELECT * FROM oauth_settings WHERE id = 1');
-$result = $stmt->execute();
-$oidcSettings = $result->fetchArray(SQLITE3_ASSOC);
+$stmt = $pdo->prepare('SELECT * FROM oauth_settings WHERE id = 1');
+$stmt->execute();
+$oidcSettings = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($oidcSettings === false) {
     // Table is empty or no row with id=1, set defaults
@@ -36,11 +36,11 @@ if ($oidcSettings === false) {
 }
 
 // get user accounts
-$stmt = $db->prepare('SELECT id, username, email FROM user ORDER BY id ASC');
-$result = $stmt->execute();
+$stmt = $pdo->prepare('SELECT id, username, email FROM user ORDER BY id ASC');
+$stmt->execute();
 
 $users = [];
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $users[] = $row;
 }
 $userCount = is_array($users) ? count($users) : 0;
@@ -342,21 +342,21 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
 
     // Get all logos in the subscriptions table
     $query = 'SELECT logo FROM subscriptions';
-    $stmt = $db->prepare($query);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($query);
+    $stmt->execute();
 
     $logosOnDisk = [];
     $logosOnDB = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $logosOnDB[] = $row['logo'];
     }
 
     // Get all logos in the payment_methods table
     $query = 'SELECT icon FROM payment_methods';
-    $stmt = $db->prepare($query);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($query);
+    $stmt->execute();
 
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         if (!strstr($row['icon'], "images/uploads/icons/")) {
             $logosOnDB[] = $row['icon'];
         }

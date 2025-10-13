@@ -4,20 +4,20 @@
 // It also adds a "oauth_settings" table to store OAuth settings.
 
 $columnQuery = $db->query("SELECT * FROM pragma_table_info('admin') where name='oidc_oauth_enabled'");
-$columnRequired = $columnQuery->fetchArray(SQLITE3_ASSOC) === false;
+$columnRequired = $columnQuery->fetch(PDO::FETCH_ASSOC) === false;
 if ($columnRequired) {
     $db->exec('ALTER TABLE admin ADD COLUMN oidc_oauth_enabled INTEGER DEFAULT 0');
 }
 
 $columnQuery = $db->query("SELECT * FROM pragma_table_info('user') where name='oidc_sub'");
-$columnRequired = $columnQuery->fetchArray(SQLITE3_ASSOC) === false;
+$columnRequired = $columnQuery->fetch(PDO::FETCH_ASSOC) === false;
 if ($columnRequired) {
     $db->exec('ALTER TABLE user ADD COLUMN oidc_sub TEXT');
 }
 
 
 $tableQuery = $db->query("SELECT name FROM sqlite_master WHERE type='table' AND name='oauth_settings'");
-$tableExists = $tableQuery->fetchArray(SQLITE3_ASSOC);
+$tableExists = $tableQuery->fetch(PDO::FETCH_ASSOC);
 
 if (!$tableExists) {
     $db->exec("CREATE TABLE oauth_settings (

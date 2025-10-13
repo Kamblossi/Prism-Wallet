@@ -13,11 +13,11 @@ require_once '../../includes/getdbkeys.php';
 $subscriptions = array();
 
 $query = "SELECT * FROM subscriptions WHERE user_id = :userId";
-$stmt = $db->prepare($query);
-$stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-$result = $stmt->execute();
+$stmt = $pdo->prepare($query);
+$stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+$stmt->execute();
 
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $cycle = $cycles[$row['cycle']]['name'];
     $frequency =$row['frequency'];
 

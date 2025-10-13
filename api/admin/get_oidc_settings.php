@@ -55,11 +55,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
 
 
     // Get user from API key
-    $sql = "SELECT * FROM user WHERE api_key = :apiKey";
-    $stmt = $db->prepare($sql);
+    $sql = "SELECT * FROM users WHERE api_key = :apiKey";
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':apiKey', $apiKey);
-    $result = $stmt->execute();
-    $user = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // If the user is not found, return an error
     if (!$user) {
@@ -83,9 +83,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     }
 
     $sql = "SELECT * FROM 'oauth_settings' WHERE id = 1";
-    $stmt = $db->prepare($sql);
-    $result = $stmt->execute();
-    $oidc_settings = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute();
+    $oidc_settings = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($oidc_settings) {
         unset($oidc_settings['id']);

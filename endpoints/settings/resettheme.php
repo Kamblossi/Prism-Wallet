@@ -10,8 +10,8 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 }
 
 if ($_SERVER["REQUEST_METHOD"] === "DELETE") {
-    $stmt = $db->prepare('DELETE FROM custom_colors WHERE user_id = :userId');
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+    $stmt = $pdo->prepare('DELETE FROM custom_colors WHERE user_id = :userId');
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
         die(json_encode([

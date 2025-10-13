@@ -15,10 +15,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $id = $data['id'];
 
-    $stmt = $db->prepare('SELECT * FROM subscriptions WHERE id = :id AND user_id = :userId');
-    $stmt->bindParam(':id', $id, SQLITE3_INTEGER);
-    $stmt->bindParam(':userId', $_SESSION['userId'], SQLITE3_INTEGER); // Assuming $_SESSION['userId'] holds the logged-in user's ID
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare('SELECT * FROM subscriptions WHERE id = :id AND user_id = :userId');
+    $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+    $stmt->bindParam(':userId', $_SESSION['userId'], PDO::PARAM_INT); // Assuming $_SESSION['userId'] holds the logged-in user's ID
+    $stmt->execute();
 
     if ($result === false) {
         die(json_encode([
@@ -27,7 +27,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         ]));
     }
 
-    $subscription = $result->fetchArray(SQLITE3_ASSOC); // Fetch the subscription details as an associative array
+    $subscription = $stmt->fetch(PDO::FETCH_ASSOC); // Fetch the subscription details as an associative array
 
     if ($subscription) {
         $subscription['payer_user'] = $members[$subscription['payer_user_id']]['name']; 

@@ -7,7 +7,7 @@
 $tablesToUpdate = ['payment_methods', 'subscriptions', 'categories', 'currencies', 'fixer', 'household', 'settings', 'custom_colors', 'notification_settings', 'telegram_notifications', 'webhook_notifications', 'gotify_notifications', 'email_notifications', 'pushover_notifications', 'discord_notifications', 'last_exchange_update'];
 foreach ($tablesToUpdate as $table) {
     $columnQuery = $db->query("SELECT * FROM pragma_table_info('$table') WHERE name='user_id'");
-    $columnRequired = $columnQuery->fetchArray(SQLITE3_ASSOC) === false;
+    $columnRequired = $columnQuery->fetch(PDO::FETCH_ASSOC) === false;
 
     if ($columnRequired) {
         $db->exec("ALTER TABLE $table ADD COLUMN user_id INTEGER DEFAULT 1");

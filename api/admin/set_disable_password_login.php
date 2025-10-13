@@ -43,11 +43,11 @@ if (!$apiKey) {
     exit;
 }
 
-$sql = "SELECT * FROM user WHERE api_key = :apiKey";
-$stmt = $db->prepare($sql);
+$sql = "SELECT * FROM users WHERE api_key = :apiKey";
+$stmt = $pdo->prepare($sql);
 $stmt->bindValue(':apiKey', $apiKey);
-$result = $stmt->execute();
-$user = $result->fetchArray(SQLITE3_ASSOC);
+$stmt->execute();
+$user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$user || $user['id'] !== 1) {
     echo json_encode([
@@ -80,8 +80,8 @@ if (!in_array($disable, ['0', '1'], true)) {
 
 // Update the password_login_disabled setting
 $updateSql = "UPDATE oauth_settings SET password_login_disabled = :disable WHERE id = 1";
-$updateStmt = $db->prepare($updateSql);
-$updateStmt->bindValue(':disable', intval($disable), SQLITE3_INTEGER);
+$updateStmt = $pdo->prepare($updateSql);
+$updateStmt->bindValue(':disable', intval($disable), PDO::PARAM_INT);
 $updateResult = $updateStmt->execute();
 
 if ($updateResult) {

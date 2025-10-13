@@ -8,12 +8,12 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $currencyCode = "CODE";
     $currencyRate = 1;
     $sqlInsert = "INSERT INTO currencies (name, symbol, code, rate, user_id) VALUES (:name, :symbol, :code, :rate, :userId)";
-    $stmtInsert = $db->prepare($sqlInsert);
-    $stmtInsert->bindParam(':name', $currencyName, SQLITE3_TEXT);
-    $stmtInsert->bindParam(':symbol', $currencySymbol, SQLITE3_TEXT);
-    $stmtInsert->bindParam(':code', $currencyCode, SQLITE3_TEXT);
-    $stmtInsert->bindParam(':rate', $currencyRate, SQLITE3_TEXT);
-    $stmtInsert->bindParam(':userId', $userId, SQLITE3_INTEGER);
+    $stmtInsert = $pdo->prepare($sqlInsert);
+    $stmtInsert->bindParam(':name', $currencyName, PDO::PARAM_STR);
+    $stmtInsert->bindParam(':symbol', $currencySymbol, PDO::PARAM_STR);
+    $stmtInsert->bindParam(':code', $currencyCode, PDO::PARAM_STR);
+    $stmtInsert->bindParam(':rate', $currencyRate, PDO::PARAM_STR);
+    $stmtInsert->bindParam(':userId', $userId, PDO::PARAM_INT);
     $resultInsert = $stmtInsert->execute();
 
     if ($resultInsert) {

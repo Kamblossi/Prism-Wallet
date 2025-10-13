@@ -4,18 +4,18 @@ require_once '../../includes/inputvalidation.php';
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     if (isset($_GET['currencyId']) && $_GET['currencyId'] != "") {
-        $query = "SELECT main_currency FROM user WHERE id = :userId";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
-        $row = $result->fetchArray(SQLITE3_ASSOC);
+        $query = "SELECT main_currency FROM users WHERE id = :userId";
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
         $mainCurrencyId = $row['main_currency'];
 
         $currencyId = $_GET['currencyId'];
         $checkQuery = "SELECT COUNT(*) FROM subscriptions WHERE currency_id = :currencyId AND user_id = :userId";
-        $checkStmt = $db->prepare($checkQuery);
-        $checkStmt->bindParam(':currencyId', $currencyId, SQLITE3_INTEGER);
-        $checkStmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+        $checkStmt = $pdo->prepare($checkQuery);
+        $checkStmt->bindParam(':currencyId', $currencyId, PDO::PARAM_INT);
+        $checkStmt->bindParam(':userId', $userId, PDO::PARAM_INT);
         $checkResult = $checkStmt->execute();
         $row = $checkResult->fetchArray();
         $count = $row[0];
@@ -37,11 +37,11 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
                 exit;
             } else {
                 $sql = "DELETE FROM currencies WHERE id = :currencyId AND user_id = :userId";
-                $stmt = $db->prepare($sql);
-                $stmt->bindParam(':currencyId', $currencyId, SQLITE3_INTEGER);
-                $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-                $result = $stmt->execute();
-                if ($result) {
+                $stmt = $pdo->prepare($sql);
+                $stmt->bindParam(':currencyId', $currencyId, PDO::PARAM_INT);
+                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+                $stmt->execute();
+                // PDO conversion - removed result check
                     echo json_encode(["success" => true, "message" => translate('currency_removed', $i18n)]);
                 } else {
                     $response = [

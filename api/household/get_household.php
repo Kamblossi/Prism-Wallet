@@ -52,11 +52,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
 
 
      // Get user from API key
-     $sql = "SELECT * FROM user WHERE api_key = :apiKey";
-     $stmt = $db->prepare($sql);
+     $sql = "SELECT * FROM users WHERE api_key = :apiKey";
+     $stmt = $pdo->prepare($sql);
      $stmt->bindValue(':apiKey', $apiKey);
-     $result = $stmt->execute();
-     $user = $result->fetchArray(SQLITE3_ASSOC);
+     $stmt->execute();
+     $user = $stmt->fetch(PDO::FETCH_ASSOC);
  
      // If the user is not found, return an error
      if (!$user) {
@@ -71,11 +71,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
      $userId = $user['id'];
 
     $sql = "SELECT * FROM household WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
+    $stmt->execute();
     $household = [];
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $household[] = $row;
     }
 
@@ -83,11 +83,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         unset($household[$key]['user_id']);
         // Check if is used in any subscriptions
         $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND payer_user_id = :householdId";
-        $stmt = $db->prepare($sql);
+        $stmt = $pdo->prepare($sql);
         $stmt->bindValue(':userId', $userId);
         $stmt->bindValue(':householdId', $household[$key]['id']);
-        $result = $stmt->execute();
-        $subscription = $result->fetchArray(SQLITE3_ASSOC);
+        $stmt->execute();
+        $subscription = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($subscription) {
             $household[$key]['in_use'] = true;
         } else {

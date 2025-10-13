@@ -24,8 +24,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $oidcEnabled = isset($data['oidcEnabled']) ? $data['oidcEnabled'] : 0;
 
-    $stmt = $db->prepare('UPDATE admin SET oidc_oauth_enabled = :oidcEnabled WHERE id = 1');
-    $stmt->bindParam(':oidcEnabled', $oidcEnabled, SQLITE3_INTEGER);
+    $stmt = $pdo->prepare('UPDATE admin SET oidc_oauth_enabled = :oidcEnabled WHERE id = 1');
+    $stmt->bindParam(':oidcEnabled', $oidcEnabled, PDO::PARAM_INT);
     $stmt->execute();
 
     if ($db->changes() > 0) {

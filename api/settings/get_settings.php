@@ -52,11 +52,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
 
 
     // Get user from API key
-    $sql = "SELECT * FROM user WHERE api_key = :apiKey";
-    $stmt = $db->prepare($sql);
+    $sql = "SELECT * FROM users WHERE api_key = :apiKey";
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':apiKey', $apiKey);
-    $result = $stmt->execute();
-    $user = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // If the user is not found, return an error
     if (!$user) {
@@ -71,20 +71,20 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     $userId = $user['id'];
 
     $sql = "SELECT * FROM settings WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
-    $settings = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $settings = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($settings) {
         unset($settings['user_id']);
     }
 
     $sql = "SELECT * FROM custom_colors WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
-    $custom_colors = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $custom_colors = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($custom_colors) {
         unset($custom_colors['user_id']);
         $settings['custom_colors'] = $custom_colors;
@@ -92,10 +92,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     
 
     $sql = "SELECT * FROM custom_css_style WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
-    $custom_css = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $custom_css = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($custom_css) {
         unset($custom_css['user_id']);
         $settings['custom_css'] = $custom_css;

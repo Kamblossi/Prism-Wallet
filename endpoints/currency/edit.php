@@ -9,15 +9,15 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         $symbol = validate($_GET['symbol']);
         $code = validate($_GET['code']);
         $sql = "UPDATE currencies SET name = :name, symbol = :symbol, code = :code WHERE id = :currencyId AND user_id = :userId";
-        $stmt = $db->prepare($sql);
-        $stmt->bindParam(':name', $name, SQLITE3_TEXT);
-        $stmt->bindParam(':symbol', $symbol, SQLITE3_TEXT);
-        $stmt->bindParam(':code', $code, SQLITE3_TEXT);
-        $stmt->bindParam(':currencyId', $currencyId, SQLITE3_INTEGER);
-        $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':name', $name, PDO::PARAM_STR);
+        $stmt->bindParam(':symbol', $symbol, PDO::PARAM_STR);
+        $stmt->bindParam(':code', $code, PDO::PARAM_STR);
+        $stmt->bindParam(':currencyId', $currencyId, PDO::PARAM_INT);
+        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+        $stmt->execute();
 
-        if ($result) {
+        // PDO conversion - removed result check
             $response = [
                 "success" => true,
                 "message" => $name . " " . translate('currency_saved', $i18n)

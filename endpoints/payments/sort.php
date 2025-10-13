@@ -8,11 +8,11 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
     foreach ($paymentMethods as $paymentMethodId) {
         $sql = "UPDATE payment_methods SET `order` = :order WHERE id = :paymentMethodId and user_id = :userId";
-        $stmt = $db->prepare($sql);
-        $stmt->bindParam(':order', $order, SQLITE3_INTEGER);
-        $stmt->bindParam(':paymentMethodId', $paymentMethodId, SQLITE3_INTEGER);
-        $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':order', $order, PDO::PARAM_INT);
+        $stmt->bindParam(':paymentMethodId', $paymentMethodId, PDO::PARAM_INT);
+        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+        $stmt->execute();
         $order++;
     }
 

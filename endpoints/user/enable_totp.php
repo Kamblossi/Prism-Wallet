@@ -74,10 +74,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $totp_code = $data['totpCode'];
 
         // Check if user already has TOTP enabled
-        $stmt = $db->prepare("SELECT totp_enabled FROM user WHERE id = :user_id");
-        $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
-        $row = $result->fetchArray(SQLITE3_ASSOC);
+        $stmt = $pdo->prepare("SELECT totp_enabled FROM users WHERE id = :user_id");
+        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+        $stmt->execute();
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($row['totp_enabled'] == 1) {
             die(json_encode([
                 "success" => false,
@@ -99,21 +99,21 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             }
 
             // Remove old TOTP data
-            $stmt = $db->prepare("DELETE FROM totp WHERE user_id = :user_id");
-            $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+            $stmt = $pdo->prepare("DELETE FROM totp WHERE user_id = :user_id");
+            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
             $stmt->execute();
 
-            $stmt = $db->prepare("INSERT INTO totp (user_id, totp_secret, backup_codes, last_totp_used) VALUES (:user_id, :totp_secret, :backup_codes, :last_totp_used)");
-            $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
-            $stmt->bindValue(':totp_secret', $secret, SQLITE3_TEXT);
-            $stmt->bindValue(':backup_codes', json_encode($backupCodes), SQLITE3_TEXT);
-            $stmt->bindValue(':last_totp_used', time(), SQLITE3_INTEGER);
+            $stmt = $pdo->prepare("INSERT INTO totp (user_id, totp_secret, backup_codes, last_totp_used) VALUES (:user_id, :totp_secret, :backup_codes, :last_totp_used)");
+            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
+            $stmt->bindValue(':totp_secret', $secret, PDO::PARAM_STR);
+            $stmt->bindValue(':backup_codes', json_encode($backupCodes), PDO::PARAM_STR);
+            $stmt->bindValue(':last_totp_used', time(), PDO::PARAM_INT);
             $stmt->execute();
 
             // Update user totp_enabled
 
-            $stmt = $db->prepare("UPDATE user SET totp_enabled = 1 WHERE id = :user_id");
-            $stmt->bindValue(':user_id', $userId, SQLITE3_INTEGER);
+            $stmt = $pdo->prepare("UPDATE users SET totp_enabled = 1 WHERE id = :user_id");
+            $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
             $stmt->execute();
 
             die(json_encode([

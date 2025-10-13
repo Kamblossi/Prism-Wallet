@@ -6,9 +6,9 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     if ($_SERVER["REQUEST_METHOD"] === "DELETE") {
         $paymentMethodId = $_GET["id"];
         $deleteQuery = "DELETE FROM payment_methods WHERE id = :paymentMethodId and user_id = :userId";
-        $deleteStmt = $db->prepare($deleteQuery);
-        $deleteStmt->bindParam(':paymentMethodId', $paymentMethodId, SQLITE3_INTEGER);
-        $deleteStmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+        $deleteStmt = $pdo->prepare($deleteQuery);
+        $deleteStmt->bindParam(':paymentMethodId', $paymentMethodId, PDO::PARAM_INT);
+        $deleteStmt->bindParam(':userId', $userId, PDO::PARAM_INT);
 
         if ($deleteStmt->execute()) {
             $success['success'] = true;

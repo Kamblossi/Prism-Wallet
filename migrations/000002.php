@@ -3,7 +3,7 @@
 // It allows the user to disable payment methods without deleting them.
 
 $columnQuery = $db->query("SELECT * FROM pragma_table_info('payment_methods') where name='enabled'");
-$columnRequired = $columnQuery->fetchArray(SQLITE3_ASSOC) === false;
+$columnRequired = $columnQuery->fetch(PDO::FETCH_ASSOC) === false;
 
 if ($columnRequired) {
     $db->exec('ALTER TABLE payment_methods ADD COLUMN enabled BOOLEAN DEFAULT 1');

@@ -23,99 +23,99 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         ]));
     } else {
         // Delete user
-        $stmt = $db->prepare('DELETE FROM user WHERE id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM users WHERE id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete subscriptions
-        $stmt = $db->prepare('DELETE FROM subscriptions WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM subscriptions WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete settings
-        $stmt = $db->prepare('DELETE FROM settings WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM settings WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete fixer
-        $stmt = $db->prepare('DELETE FROM fixer WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM fixer WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete custom colors
-        $stmt = $db->prepare('DELETE FROM custom_colors WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM custom_colors WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete currencies
-        $stmt = $db->prepare('DELETE FROM currencies WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM currencies WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete categories
-        $stmt = $db->prepare('DELETE FROM categories WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM categories WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete household
-        $stmt = $db->prepare('DELETE FROM household WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM household WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete payment methods
-        $stmt = $db->prepare('DELETE FROM payment_methods WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM payment_methods WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete email notifications
-        $stmt = $db->prepare('DELETE FROM email_notifications WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM email_notifications WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete telegram notifications
-        $stmt = $db->prepare('DELETE FROM telegram_notifications WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM telegram_notifications WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete webhook notifications
-        $stmt = $db->prepare('DELETE FROM webhook_notifications WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM webhook_notifications WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete gotify notifications
-        $stmt = $db->prepare('DELETE FROM gotify_notifications WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM gotify_notifications WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete pushover notifications
-        $stmt = $db->prepare('DELETE FROM pushover_notifications WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM pushover_notifications WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Dele notification settings
-        $stmt = $db->prepare('DELETE FROM notification_settings WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM notification_settings WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete last exchange update
-        $stmt = $db->prepare('DELETE FROM last_exchange_update WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM last_exchange_update WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete email verification
-        $stmt = $db->prepare('DELETE FROM email_verification WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM email_verification WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete totp
-        $stmt = $db->prepare('DELETE FROM totp WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM totp WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         // Delete total yearly cost
-        $stmt = $db->prepare('DELETE FROM total_yearly_cost WHERE user_id = :id');
-        $stmt->bindValue(':id', $userIdToDelete, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare('DELETE FROM total_yearly_cost WHERE user_id = :id');
+        $stmt->bindValue(':id', $userIdToDelete, PDO::PARAM_INT);
+        $stmt->execute();
 
         die(json_encode([
             "success" => true,

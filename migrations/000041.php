@@ -24,20 +24,20 @@ if ($usersResult === false) {
     return; // Nothing to do
 }
 
-while ($userRow = $usersResult->fetchArray(SQLITE3_ASSOC)) {
+while ($userRow = $usersResult->fetch(PDO::FETCH_ASSOC)) {
     $uid = (int)$userRow['id'];
 
     // Build a set of existing currency codes for this user
     $existingCodes = [];
-    $stmtExisting = $db->prepare('SELECT code FROM currencies WHERE user_id = :uid');
-    $stmtExisting->bindValue(':uid', $uid, SQLITE3_INTEGER);
+    $stmtExisting = $pdo->prepare('SELECT code FROM currencies WHERE user_id = :uid');
+    $stmtExisting->bindValue(':uid', $uid, PDO::PARAM_INT);
     $resExisting = $stmtExisting->execute();
-    while ($row = $resExisting->fetchArray(SQLITE3_ASSOC)) {
+    while ($row = $resExisting->fetch(PDO::FETCH_ASSOC)) {
         $existingCodes[$row['code']] = true;
     }
 
     // Prepare insert statement once
-    $stmtInsert = $db->prepare('INSERT INTO currencies (name, symbol, code, rate, user_id) VALUES (:name, :symbol, :code, :rate, :uid)');
+    $stmtInsert = $pdo->prepare('INSERT INTO currencies (name, symbol, code, rate, user_id) VALUES (:name, :symbol, :code, :rate, :uid)');
 
     $addedCount = 0;
     foreach ($allCurrencies as $code => $data) {
@@ -45,11 +45,11 @@ while ($userRow = $usersResult->fetchArray(SQLITE3_ASSOC)) {
             continue; // Skip existing
         }
         $stmtInsert->reset();
-        $stmtInsert->bindValue(':name', $data['name'], SQLITE3_TEXT);
-        $stmtInsert->bindValue(':symbol', $data['symbol'], SQLITE3_TEXT);
-        $stmtInsert->bindValue(':code', $data['code'], SQLITE3_TEXT);
-        $stmtInsert->bindValue(':rate', 1, SQLITE3_FLOAT);
-        $stmtInsert->bindValue(':uid', $uid, SQLITE3_INTEGER);
+        $stmtInsert->bindValue(':name', $data['name'], PDO::PARAM_STR);
+        $stmtInsert->bindValue(':symbol', $data['symbol'], PDO::PARAM_STR);
+        $stmtInsert->bindValue(':code', $data['code'], PDO::PARAM_STR);
+        $stmtInsert->bindValue(':rate', 1, PDO::PARAM_STR);
+        $stmtInsert->bindValue(':uid', $uid, PDO::PARAM_INT);
         $stmtInsert->execute();
         $addedCount++;
     }

@@ -22,9 +22,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         ]));
     }
 
-    $stmt = $db->prepare('UPDATE settings SET dark_theme = :theme WHERE user_id = :userId');
-    $stmt->bindParam(':theme', $theme, SQLITE3_INTEGER);
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+    $stmt = $pdo->prepare('UPDATE settings SET dark_theme = :theme WHERE user_id = :userId');
+    $stmt->bindParam(':theme', $theme, PDO::PARAM_INT);
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
         die(json_encode([

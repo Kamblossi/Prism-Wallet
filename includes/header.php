@@ -13,10 +13,10 @@ require_once 'getsettings.php';
 
 require_once 'version.php';
 
-if ($userCount == 0) {
-  $db->close();
-  header("Location: registration.php");
-  exit();
+// Check if user is authenticated via Clerk
+if (!$session->isLoggedIn()) {
+    header("Location: /clerk-auth.php");
+    exit();
 }
 
 $demoMode = getenv('DEMO_MODE');
@@ -49,7 +49,7 @@ if (isset($themeValue)) {
   ]);
 }
 
-$isAdmin = $_SESSION['userId'] == 1;
+$isAdmin = $session->isAdmin();
 
 $locale = isset($_COOKIE['user_locale']) ? $_COOKIE['user_locale'] : 'en_US';
 $formatter = new IntlDateFormatter(

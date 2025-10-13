@@ -42,9 +42,9 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         $query = "SELECT COUNT(*) FROM webhook_notifications WHERE user_id = :userId";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(":userId", $userId, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt = $pdo->prepare($query);
+        $stmt->bindParam(":userId", $userId, PDO::PARAM_INT);
+        $stmt->execute();
 
         if ($result === false) {
             $response = [
@@ -63,14 +63,14 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
                               SET enabled = :enabled, url = :url, headers = :headers, payload = :payload, cancelation_payload = :cancelation_payload, ignore_ssl = :ignore_ssl WHERE user_id = :userId";
             }
 
-            $stmt = $db->prepare($query);
-            $stmt->bindValue(':enabled', $enabled, SQLITE3_INTEGER);
-            $stmt->bindValue(':url', $url, SQLITE3_TEXT);
-            $stmt->bindValue(':headers', $headers, SQLITE3_TEXT);
-            $stmt->bindValue(':payload', $payload, SQLITE3_TEXT);
-            $stmt->bindValue(':cancelation_payload', $cancelation_payload, SQLITE3_TEXT);
-            $stmt->bindValue(':ignore_ssl', $ignore_ssl, SQLITE3_INTEGER);
-            $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+            $stmt = $pdo->prepare($query);
+            $stmt->bindValue(':enabled', $enabled, PDO::PARAM_INT);
+            $stmt->bindValue(':url', $url, PDO::PARAM_STR);
+            $stmt->bindValue(':headers', $headers, PDO::PARAM_STR);
+            $stmt->bindValue(':payload', $payload, PDO::PARAM_STR);
+            $stmt->bindValue(':cancelation_payload', $cancelation_payload, PDO::PARAM_STR);
+            $stmt->bindValue(':ignore_ssl', $ignore_ssl, PDO::PARAM_INT);
+            $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
 
             if ($stmt->execute()) {
                 $response = [

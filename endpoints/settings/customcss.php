@@ -15,13 +15,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $customCss = $data['customCss'];
     
-    $stmt = $db->prepare('DELETE FROM custom_css_style WHERE user_id = :userId');
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+    $stmt = $pdo->prepare('DELETE FROM custom_css_style WHERE user_id = :userId');
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
     $stmt->execute();
     
-    $stmt = $db->prepare('INSERT INTO custom_css_style (css, user_id) VALUES (:customCss, :userId)');
-    $stmt->bindParam(':customCss', $customCss, SQLITE3_TEXT);
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
+    $stmt = $pdo->prepare('INSERT INTO custom_css_style (css, user_id) VALUES (:customCss, :userId)');
+    $stmt->bindParam(':customCss', $customCss, PDO::PARAM_STR);
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
 
     if ($stmt->execute()) {
         die(json_encode([

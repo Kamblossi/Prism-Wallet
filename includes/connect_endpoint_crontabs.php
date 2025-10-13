@@ -1,15 +1,11 @@
 <?php
+// Cron/CLI connector for Postgres PDO
+require_once __DIR__ . '/connect.php';
 
-$databaseFile = __DIR__ . '/../db/wallos.db';
-$db = new SQLite3($databaseFile);
-$db->busyTimeout(5000);
-
-if (!$db) {
-    die('Connection to the database failed.');
+// Set timezone if provided via env
+if ($tz = (getenv('TZ') ?: ($_ENV['TZ'] ?? null))) {
+    date_default_timezone_set($tz);
 }
 
-require_once __DIR__ . '/../includes/i18n/languages.php';
-require_once __DIR__ . '/../includes/i18n/getlang.php';
-require_once __DIR__ . '/../includes/i18n/' . $lang . '.php';
-
 ?>
+

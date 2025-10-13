@@ -22,11 +22,11 @@ function getPriceConverted($price, $currency, $database, $userId)
 {
     $query = "SELECT rate FROM currencies WHERE id = :currency AND user_id = :userId";
     $stmt = $database->prepare($query);
-    $stmt->bindParam(':currency', $currency, SQLITE3_INTEGER);
-    $stmt->bindParam(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt->bindParam(':currency', $currency, PDO::PARAM_INT);
+    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    $exchangeRate = $result->fetchArray(SQLITE3_ASSOC);
+    $exchangeRate = $stmt->fetch(PDO::FETCH_ASSOC);
     if ($exchangeRate === false) {
         return $price;
     } else {
@@ -37,11 +37,11 @@ function getPriceConverted($price, $currency, $database, $userId)
 
 // Get categories
 $categories = array();
-$query = "SELECT * FROM categories WHERE user_id = :userId ORDER BY 'order' ASC";
-$stmt = $db->prepare($query);
-$stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-$result = $stmt->execute();
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+$query = "SELECT * FROM categories WHERE user_id = :userId ORDER BY \"order\" ASC";
+$stmt = $pdo->prepare($query);
+$stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+$stmt->execute();
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
   $categoryId = $row['id'];
   $categories[$categoryId] = $row;
   $categories[$categoryId]['count'] = 0;
@@ -52,10 +52,10 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 // Get payment methods
 $paymentMethods = array();
 $query = "SELECT * FROM payment_methods WHERE user_id = :userId AND enabled = 1";
-$stmt = $db->prepare($query);
-$stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-$result = $stmt->execute();
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+$stmt = $pdo->prepare($query);
+$stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+$stmt->execute();
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
   $paymentMethodId = $row['id'];
   $paymentMethods[$paymentMethodId] = $row;
   $paymentMethods[$paymentMethodId]['count'] = 0;
@@ -66,10 +66,10 @@ while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
 //Get household members
 $members = array();
 $query = "SELECT * FROM household WHERE user_id = :userId";
-$stmt = $db->prepare($query);
-$stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-$result = $stmt->execute();
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+$stmt = $pdo->prepare($query);
+$stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+$stmt->execute();
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
   $memberId = $row['id'];
   $members[$memberId] = $row;
   $members[$memberId]['count'] = 0;
@@ -117,18 +117,18 @@ if (!empty($conditions)) {
     $query .= " WHERE " . implode(' AND ', $conditions);
 }
 
-$stmt = $db->prepare($query);
+$stmt = $pdo->prepare($query);
 $statsSubtitle = !empty($statsSubtitleParts) ? '(' . implode(', ', $statsSubtitleParts) . ')' : "";
 
 foreach ($params as $key => $value) {
-    $stmt->bindValue($key, $value, SQLITE3_INTEGER);
+    $stmt->bindValue($key, $value, PDO::PARAM_INT);
 }
 
-$result = $stmt->execute();
+$stmt->execute();
 $usesMultipleCurrencies = false;
 
-if ($result) {
-    while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+// PDO conversion - removed result check
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $subscriptions[] = $row;
     }
     if (isset($subscriptions)) {
@@ -194,10 +194,10 @@ if ($result) {
                 // Check if it has a replacement subscription and if it was not already counted
                 if ($replacementSubscriptionId && !in_array($replacementSubscriptionId, $replacementSubscriptions)) {
                     $query = "SELECT price, currency_id, cycle, frequency FROM subscriptions WHERE id = :replacementSubscriptionId";
-                    $stmt = $db->prepare($query);
-                    $stmt->bindValue(':replacementSubscriptionId', $replacementSubscriptionId, SQLITE3_INTEGER);
-                    $result = $stmt->execute();
-                    $replacementSubscription = $result->fetchArray(SQLITE3_ASSOC);
+                    $stmt = $pdo->prepare($query);
+                    $stmt->bindValue(':replacementSubscriptionId', $replacementSubscriptionId, PDO::PARAM_INT);
+                    $stmt->execute();
+                    $replacementSubscription = $stmt->fetch(PDO::FETCH_ASSOC);
                     if ($replacementSubscription) {
                         $replacementSubscriptionPrice = getPriceConverted($replacementSubscription['price'], $replacementSubscription['currency_id'], $db, $userId);
                         $replacementSubscriptionPrice = getPricePerMonth($replacementSubscription['cycle'], $replacementSubscription['frequency'], $replacementSubscriptionPrice);
@@ -256,21 +256,21 @@ if (isset($userData['budget']) && $userData['budget'] > 0) {
 $showCantConverErrorMessage = false;
 if ($usesMultipleCurrencies) {
     $query = "SELECT api_key FROM fixer WHERE user_id = :userId";
-    $stmt = $db->prepare($query);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
-    if ($result->fetchArray(SQLITE3_ASSOC) === false) {
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
+    if ($stmt->fetch(PDO::FETCH_ASSOC) === false) {
         $showCantConverErrorMessage = true;
     }
 }
 
 $query = "SELECT * FROM total_yearly_cost WHERE user_id = :userId";
-$stmt = $db->prepare($query);
-$stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-$result = $stmt->execute();
+$stmt = $pdo->prepare($query);
+$stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+$stmt->execute();
 
 $totalMonthlyCostDataPoints = [];
-while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $totalMonthlyCostDataPoints[] = [
         "label" => html_entity_decode($row['date']),
         "y" => round($row['cost'] / 12, 2),

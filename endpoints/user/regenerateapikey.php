@@ -14,13 +14,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     $apiKey = bin2hex(random_bytes(32));
 
-    $sql = "UPDATE user SET api_key = :apiKey WHERE id = :userId";
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':apiKey', $apiKey, SQLITE3_TEXT);
-    $stmt->bindValue(':userId', $userId, SQLITE3_TEXT);
-    $result = $stmt->execute();
+    $sql = "UPDATE users SET api_key = :apiKey WHERE id = :userId";
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':apiKey', $apiKey, PDO::PARAM_STR);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_STR);
+    $stmt->execute();
 
-    if ($result) {
+    // PDO conversion - removed result check
         $response = [
             "success" => true,
             "message" => translate('user_details_saved', $i18n),

@@ -30,10 +30,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     {
         $query = "SELECT rate FROM currencies WHERE id = :currency";
         $stmt = $database->prepare($query);
-        $stmt->bindParam(':currency', $currency, SQLITE3_INTEGER);
-        $result = $stmt->execute();
+        $stmt->bindParam(':currency', $currency, PDO::PARAM_INT);
+        $stmt->execute();
 
-        $exchangeRate = $result->fetchArray(SQLITE3_ASSOC);
+        $exchangeRate = $stmt->fetch(PDO::FETCH_ASSOC);
         if ($exchangeRate === false) {
             return $price;
         } else {
@@ -43,11 +43,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     }
 
     // Get user from API key
-    $sql = "SELECT * FROM user WHERE api_key = :apiKey";
-    $stmt = $db->prepare($sql);
+    $sql = "SELECT * FROM users WHERE api_key = :apiKey";
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':apiKey', $apiKey);
-    $result = $stmt->execute();
-    $user = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
     // If the user is not found, return an error
     if (!$user) {
@@ -64,62 +64,62 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
 
     // Get last exchange update date for user
     $sql = "SELECT * FROM last_exchange_update WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
-    $lastExchangeUpdate = $result->fetchArray(SQLITE3_ASSOC);
+    $stmt->execute();
+    $lastExchangeUpdate = $stmt->fetch(PDO::FETCH_ASSOC);
 
     $canConvertCurrency = empty($lastExchangeUpdate['date']) ? false : true;
 
     // Get currencies for user
     $sql = "SELECT * FROM currencies WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
+    $stmt->execute();
     $currencies = [];
-    while ($currency = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($currency = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $currencies[$currency['id']] = $currency;
     }
 
     // Get categories for user
     $sql = "SELECT * FROM categories WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
+    $stmt->execute();
     $categories = [];
-    while ($category = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($category = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $categories[$category['id']] = $category['name'];
     }
 
     // Get members for user
     $sql = "SELECT * FROM household WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
+    $stmt->execute();
     $members = [];
-    while ($member = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($member = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $members[$member['id']] = $member['name'];
     }
 
     // Get payment methods for user
     $sql = "SELECT * FROM payment_methods WHERE user_id = :userId";
-    $stmt = $db->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
-    $result = $stmt->execute();
+    $stmt->execute();
     $paymentMethods = [];
-    while ($paymentMethod = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($paymentMethod = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $paymentMethods[$paymentMethod['id']] = $paymentMethod['name'];
     }
 
     $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = 0 ORDER BY next_payment ASC";
 
-    $stmt = $db->prepare($sql);
-    $stmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt = $pdo->prepare($sql);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
 
-    if ($result) {
+    // PDO conversion - removed result check
         $subscriptions = array();
-        while ($row = $result->fetchArray(SQLITE3_ASSOC)) {
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $subscriptions[] = $row;
         }
     }
@@ -128,11 +128,11 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
 
     // Get notification settings
     $notificationQuery = "SELECT days FROM notification_settings WHERE user_id = :userId";
-    $notificationQueryStmt = $db->prepare($notificationQuery);
-    $notificationQueryStmt->bindValue(':userId', $userId, SQLITE3_INTEGER);
+    $notificationQueryStmt = $pdo->prepare($notificationQuery);
+    $notificationQueryStmt->bindValue(':userId', $userId, PDO::PARAM_INT);
     $notificationResult = $notificationQueryStmt->execute();
     $globalNotificationDays = 1; // Default value
-    if ($row = $notificationResult->fetchArray(SQLITE3_ASSOC)) {
+    if ($row = $notificationResult->fetch(PDO::FETCH_ASSOC)) {
         $globalNotificationDays = $row['days'];
     }
 
@@ -152,8 +152,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         $subscriptionsToReturn[] = $subscriptionToReturn;
     }
 
-    $stmt->bindValue(':inactive', false, SQLITE3_INTEGER);
-    $result = $stmt->execute();
+    $stmt->bindValue(':inactive', false, PDO::PARAM_INT);
+    $stmt->execute();
 
     header('Content-Type: text/calendar; charset=utf-8');
     header('Content-Disposition: attachment; filename="subscriptions.ics"');
@@ -164,7 +164,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
 
     $icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Wallos//iCalendar//EN\nNAME:Wallos\nX-WR-CALNAME:Wallos\n";
 
-    while ($subscription = $result->fetchArray(SQLITE3_ASSOC)) {
+    while ($subscription = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $subscription['payer_user'] = $members[$subscription['payer_user_id']];
         $subscription['category'] = $categories[$subscription['category_id']];
         $subscription['payment_method'] = $paymentMethods[$subscription['payment_method_id']];
