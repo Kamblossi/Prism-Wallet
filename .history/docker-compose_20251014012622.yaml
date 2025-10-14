@@ -1,0 +1,42 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: prism-wallet-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-prism_wallet_prod}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      TZ: 'Africa/Nairobi'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  wallos:
+    container_name: prism-wallet
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:80/tcp"
+    environment:
+      TZ: 'Africa/Nairobi'
+      APP_URL: 'http://localhost:8081'
+      AUTH_PROVIDER: 'local'
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: prism_wallet_dev
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      # Development convenience: bypass Clerk. Remove or set to 0 for production.
+      DISABLE_AUTH: 0
+    volumes:
+      - './logos:/var/www/html/images/uploads/logos'
+    restart: unless-stopped
+
+volumes:
+  pgdata:

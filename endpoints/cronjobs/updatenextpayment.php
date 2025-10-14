@@ -14,7 +14,7 @@ $currentDateString = $currentDate->format('Y-m-d');
 
 $cycles = array();
 $query = "SELECT * FROM cycles";
-$result = $db->query($query);
+$stmt = $db->query($query);
 while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $cycleId = $row['id'];
     $cycles[$cycleId] = $row;

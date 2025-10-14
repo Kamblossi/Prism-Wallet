@@ -2,112 +2,60 @@
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/inputvalidation.php';
 
-if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
-    if (isset($_GET['action']) && $_GET['action'] == "add") {
-        $householdName = "Member";
-        $sqlInsert = "INSERT INTO household (name, user_id) VALUES (:name, :userId)";
-        $stmtInsert = $pdo->prepare($sqlInsert);
-        $stmtInsert->bindParam(':name', $householdName, PDO::PARAM_STR);
-        $stmtInsert->bindParam(':userId', $userId, PDO::PARAM_INT);
-        $resultInsert = $stmtInsert->execute();
-
-        if ($resultInsert) {
-            $householdId = $db->lastInsertRowID();
-            $response = [
-                "success" => true,
-                "householdId" => $householdId,
-            ];
-            echo json_encode($response);
-        } else {
-            $response = [
-                "success" => false,
-                "errorMessage" => translate('failed_add_household', $i18n)
-            ];
-            echo json_encode($response);
-        }
-    } else if (isset($_GET['action']) && $_GET['action'] == "edit") {
-        if (isset($_GET['memberId']) && $_GET['memberId'] != "" && isset($_GET['name']) && $_GET['name'] != "") {
-            $memberId = $_GET['memberId'];
-            $name = validate($_GET['name']);
-            $email = $_GET['email'] ? $_GET['email'] : "";
-            $email = validate($email);
-            $sql = "UPDATE household SET name = :name, email = :email WHERE id = :memberId AND user_id = :userId";
-            $stmt = $pdo->prepare($sql);
-            $stmt->bindParam(':name', $name, PDO::PARAM_STR);
-            $stmt->bindParam(':email', $email, PDO::PARAM_STR);
-            $stmt->bindParam(':memberId', $memberId, PDO::PARAM_INT);
-            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            $stmt->execute();
-
-            // PDO conversion - removed result check
-                $response = [
-                    "success" => true,
-                    "message" => translate('member_saved', $i18n)
-                ];
-                echo json_encode($response);
-            } else {
-                $response = [
-                    "success" => false,
-                    "errorMessage" => translate('failed_edit_household', $i18n)
-                ];
-                echo json_encode($response);
-            }
-        } else {
-            $response = [
-                "success" => false,
-                "errorMessage" => translate('fill_all_fields', $i18n)
-            ];
-            echo json_encode($response);
-        }
-    } else if (isset($_GET['action']) && $_GET['action'] == "delete") {
-        if (isset($_GET['memberId']) && $_GET['memberId'] != "" && $_GET['memberId'] != 1) {
-            $memberId = $_GET['memberId'];
-            $checkMember = "SELECT COUNT(*) FROM subscriptions WHERE payer_user_id = :memberId AND user_id = :userId";
-            $checkStmt = $pdo->prepare($checkMember);
-            $checkStmt->bindParam(':memberId', $memberId, PDO::PARAM_INT);
-            $checkStmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            $checkResult = $checkStmt->execute();
-            $row = $checkResult->fetchArray();
-            $count = $row[0];
-
-            if ($count > 0) {
-                $response = [
-                    "success" => false,
-                    "errorMessage" => translate('household_in_use', $i18n)
-                ];
-                echo json_encode($response);
-            } else {
-                $sql = "DELETE FROM household WHERE id = :memberId and user_id = :userId";
-                $stmt = $pdo->prepare($sql);
-                $stmt->bindParam(':memberId', $memberId, PDO::PARAM_INT);
-                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-                $stmt->execute();
-                // PDO conversion - removed result check
-                    $response = [
-                        "success" => true,
-                        "message" => translate('member_removed', $i18n)
-                    ];
-                    echo json_encode($response);
-                } else {
-                    $response = [
-                        "success" => false,
-                        "errorMessage" => translate('failed_remove_household', $i18n)
-                    ];
-                    echo json_encode($response);
-                }
-            }
-        } else {
-            $response = [
-                "success" => false,
-                "errorMessage" => translate('failed_remove_household', $i18n)
-            ];
-            echo json_encode($response);
-        }
-    } else {
-        echo translate('error', $i18n);
-    }
-} else {
-    echo translate('error', $i18n);
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    echo json_encode([ 'success' => false, 'errorMessage' => translate('session_expired', $i18n) ]);
+    exit;
 }
 
+$action = $_GET['action'] ?? '';
+
+if ($action === 'add') {
+    // Create a placeholder member named "Member"
+    $householdName = 'Member';
+    $stmt = $pdo->prepare('INSERT INTO household (name, user_id) VALUES (:name, :user_id) RETURNING id');
+    $stmt->execute([':name' => $householdName, ':user_id' => $userId]);
+    $newId = (int)$stmt->fetchColumn();
+    echo json_encode([ 'success' => true, 'householdId' => $newId ]);
+    exit;
+}
+
+if ($action === 'edit') {
+    $memberId = $_GET['memberId'] ?? '';
+    $name = isset($_GET['name']) ? validate($_GET['name']) : '';
+    $email = isset($_GET['email']) ? validate($_GET['email']) : '';
+
+    if ($memberId === '' || $name === '') {
+        echo json_encode([ 'success' => false, 'errorMessage' => translate('fill_all_fields', $i18n) ]);
+        exit;
+    }
+
+    $stmt = $pdo->prepare('UPDATE household SET name = :name, email = :email WHERE id = :id AND user_id = :user_id');
+    $stmt->execute([':name' => $name, ':email' => $email, ':id' => $memberId, ':user_id' => $userId]);
+    echo json_encode([ 'success' => true, 'message' => translate('member_saved', $i18n) ]);
+    exit;
+}
+
+if ($action === 'delete') {
+    $memberId = $_GET['memberId'] ?? '';
+    if ($memberId === '' || (int)$memberId === 1) {
+        echo json_encode([ 'success' => false, 'errorMessage' => translate('failed_remove_household', $i18n) ]);
+        exit;
+    }
+
+    // Check if member is in use by any subscription
+    $check = $pdo->prepare('SELECT COUNT(*) FROM subscriptions WHERE payer_user_id = :id AND user_id = :user_id');
+    $check->execute([':id' => $memberId, ':user_id' => $userId]);
+    $count = (int)$check->fetchColumn();
+    if ($count > 0) {
+        echo json_encode([ 'success' => false, 'errorMessage' => translate('household_in_use', $i18n) ]);
+        exit;
+    }
+
+    $del = $pdo->prepare('DELETE FROM household WHERE id = :id AND user_id = :user_id');
+    $del->execute([':id' => $memberId, ':user_id' => $userId]);
+    echo json_encode([ 'success' => true, 'message' => translate('member_removed', $i18n) ]);
+    exit;
+}
+
+echo json_encode([ 'success' => false, 'errorMessage' => translate('error', $i18n) ]);
 ?>

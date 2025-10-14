@@ -22,10 +22,11 @@
     }
 
     $payment_methods = array();
-    $query = $pdo->prepare("SELECT * FROM payment_methods WHERE enabled=:enabled AND user_id = :userId ORDER BY `order` ASC");
-    $query->bindValue(':enabled', 1, PDO::PARAM_INT);
-    $query->bindValue(':userId', $userId, PDO::PARAM_INT);
-    $result = $query->execute();
+    // Use proper statement variable and quote reserved column name for PostgreSQL
+    $stmt = $pdo->prepare("SELECT * FROM payment_methods WHERE enabled = :enabled AND user_id = :userId ORDER BY \"order\" ASC");
+    $stmt->bindValue(':enabled', 1, PDO::PARAM_INT);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $payment_methodId = $row['id'];
         $payment_methods[$payment_methodId] = $row;
@@ -33,7 +34,8 @@
     }
 
     $categories = array();
-    $query = "SELECT * FROM categories WHERE user_id = :userId ORDER BY `order` ASC";
+    // Quote reserved column name for PostgreSQL
+    $query = "SELECT * FROM categories WHERE user_id = :userId ORDER BY \"order\" ASC";
     $stmt = $pdo->prepare($query);
     $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
     $stmt->execute();
@@ -44,11 +46,21 @@
     }
 
     $cycles = array();
-    $query = "SELECT * FROM cycles";
-    $result = $db->query($query);
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $cycleId = $row['id'];
-        $cycles[$cycleId] = $row;
+    try {
+        $query = "SELECT * FROM cycles";
+        $stmt = $db->query($query);
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $cycleId = $row['id'];
+            $cycles[$cycleId] = $row;
+        }
+    } catch (Throwable $e) {
+        // Fallback defaults if table missing during first boot; connect.php/migrate.php should create it
+        $cycles = [
+            1 => ['id' => 1, 'name' => 'Daily'],
+            2 => ['id' => 2, 'name' => 'Weekly'],
+            3 => ['id' => 3, 'name' => 'Monthly'],
+            4 => ['id' => 4, 'name' => 'Yearly'],
+        ];
     }
 
     $frequencies = array();

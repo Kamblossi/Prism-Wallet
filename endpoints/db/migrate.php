@@ -29,10 +29,20 @@ try {
             is_admin BOOLEAN DEFAULT FALSE,
             language TEXT DEFAULT 'en',
             budget NUMERIC(12,2) DEFAULT 0,
+            password_hash TEXT,
+            -- Email verification fields (added to base schema to avoid first-run issues)
+            is_verified SMALLINT DEFAULT 0,
+            verification_token TEXT,
+            token_expires_at TIMESTAMPTZ,
             created_at TIMESTAMPTZ DEFAULT NOW(),
             updated_at TIMESTAMPTZ DEFAULT NOW()
         )
     ");
+
+    // Ensure password_hash column exists for local auth (idempotent)
+    try {
+        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT");
+    } catch (Throwable $e) { /* ignore */ }
 
     // settings
     execSql($pdo, "
@@ -80,6 +90,15 @@ try {
         )
     ");
 
+    // Ensure email/SMTP fields exist for cron jobs that read from admin
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS smtp_address TEXT"); } catch (Throwable $e) { /* ignore */ }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS smtp_port INTEGER"); } catch (Throwable $e) { /* ignore */ }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS smtp_username TEXT"); } catch (Throwable $e) { /* ignore */ }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS smtp_password TEXT"); } catch (Throwable $e) { /* ignore */ }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS from_email TEXT"); } catch (Throwable $e) { /* ignore */ }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS encryption TEXT"); } catch (Throwable $e) { /* ignore */ }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS server_url TEXT"); } catch (Throwable $e) { /* ignore */ }
+
     // currencies
     execSql($pdo, "
         CREATE TABLE IF NOT EXISTS currencies (
@@ -104,6 +123,16 @@ try {
         )
     ");
 
+    // fixer settings (per user)
+    execSql($pdo, "
+        CREATE TABLE IF NOT EXISTS fixer (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            api_key TEXT,
+            provider SMALLINT DEFAULT 0
+        )
+    ");
+
     // categories
     execSql($pdo, "
         CREATE TABLE IF NOT EXISTS categories (
@@ -123,6 +152,20 @@ try {
             email TEXT
         )
     ");
+
+    // cycles (payment intervals like Daily/Weekly/Monthly/Yearly)
+    execSql($pdo, "
+        CREATE TABLE IF NOT EXISTS cycles (
+            id SMALLINT PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE
+        )
+    ");
+    // Seed defaults if table is empty (idempotent)
+    $count = (int)$pdo->query('SELECT COUNT(*) FROM cycles')->fetchColumn();
+    if ($count === 0) {
+        $stmt = $pdo->prepare('INSERT INTO cycles (id, name) VALUES (1, :d), (2, :w), (3, :m), (4, :y)');
+        $stmt->execute([':d' => 'Daily', ':w' => 'Weekly', ':m' => 'Monthly', ':y' => 'Yearly']);
+    }
 
     // subscriptions
     execSql($pdo, "
@@ -144,6 +187,23 @@ try {
             auto_renew BOOLEAN DEFAULT TRUE,
             replacement_subscription_id BIGINT,
             notify BOOLEAN DEFAULT FALSE
+        )
+    ");
+
+    // last_exchange_update captures last exchange-rate update per user
+    execSql($pdo, "
+        CREATE TABLE IF NOT EXISTS last_exchange_update (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            date DATE
+        )
+    ");
+
+    // last_update_next_payment_date used by cron to record last run
+    execSql($pdo, "
+        CREATE TABLE IF NOT EXISTS last_update_next_payment_date (
+            id BIGSERIAL PRIMARY KEY,
+            date DATE
         )
     ");
 
@@ -216,6 +276,34 @@ try {
             topic TEXT
         )
     ");
+    // Webhook notifications
+    execSql($pdo, "
+        CREATE TABLE IF NOT EXISTS webhook_notifications (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            enabled BOOLEAN DEFAULT FALSE,
+            url TEXT,
+            request_method TEXT DEFAULT 'POST',
+            headers TEXT,
+            payload TEXT,
+            cancelation_payload TEXT,
+            ignore_ssl BOOLEAN DEFAULT FALSE
+        )
+    ");
+    // Gotify notifications
+    execSql($pdo, "
+        CREATE TABLE IF NOT EXISTS gotify_notifications (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            enabled BOOLEAN DEFAULT FALSE,
+            url TEXT,
+            token TEXT,
+            ignore_ssl BOOLEAN DEFAULT FALSE
+        )
+    ");
+    // Ensure optional columns exist for ntfy (used by settings page)
+    try { $pdo->exec("ALTER TABLE ntfy_notifications ADD COLUMN IF NOT EXISTS headers TEXT"); } catch (Throwable $e) { /* ignore */ }
+    try { $pdo->exec("ALTER TABLE ntfy_notifications ADD COLUMN IF NOT EXISTS ignore_ssl BOOLEAN DEFAULT FALSE"); } catch (Throwable $e) { /* ignore */ }
 
     // oauth/ai minimal tables to avoid references breaking
     execSql($pdo, "
@@ -253,6 +341,17 @@ try {
         )
     ");
 
+    // password reset requests used by cron
+    execSql($pdo, "
+        CREATE TABLE IF NOT EXISTS password_resets (
+            id BIGSERIAL PRIMARY KEY,
+            email TEXT NOT NULL,
+            token TEXT NOT NULL,
+            email_sent SMALLINT NOT NULL DEFAULT 0,
+            requested_at TIMESTAMPTZ DEFAULT NOW()
+        )
+    ");
+
     echo "OK: migrations applied for Postgres.\n";
 } catch (Throwable $e) {
     http_response_code(500);
@@ -260,5 +359,20 @@ try {
     exit(1);
 }
 
-?>
+// Include and run additional migrations from endpoints/db/migrations (if any)
+try {
+    $migrationsDir = __DIR__ . '/migrations';
+    if (is_dir($migrationsDir)) {
+        $files = glob($migrationsDir . '/*.php');
+        sort($files, SORT_NATURAL);
+        foreach ($files as $file) {
+            require $file; // Each migration can use $pdo and should be idempotent
+        }
+    }
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo 'Migration runner error: ' . $e->getMessage() . "\n";
+    exit(1);
+}
 
+?>

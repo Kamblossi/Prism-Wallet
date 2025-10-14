@@ -51,7 +51,7 @@ if ($customCss !== false) {
 }
 
 $query = "SELECT * FROM admin";
-$result = $db->query($query);
+$stmt = $pdo->query($query);
 $adminSettings = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($adminSettings !== false) {

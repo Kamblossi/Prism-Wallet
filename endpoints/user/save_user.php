@@ -9,89 +9,57 @@ if (!file_exists('../../images/uploads/logos')) {
 
 function update_exchange_rate($db, $userId)
 {
-    $query = "SELECT api_key, provider FROM fixer WHERE user_id = :userId";
-    $stmt = $pdo->prepare($query);
-    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-    $stmt->execute();
+    // Use global PDO
+    global $pdo;
+    // Get API settings for this user
+    $stmt = $pdo->prepare('SELECT api_key, provider FROM fixer WHERE user_id = :uid');
+    $stmt->execute([':uid' => $userId]);
+    $fx = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$fx || empty($fx['api_key'])) { return; }
 
-    // PDO conversion - removed result check
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    // List currency codes for this user
+    $stmt = $pdo->prepare('SELECT code FROM currencies WHERE user_id = :uid');
+    $stmt->execute([':uid' => $userId]);
+    $codesList = $stmt->fetchAll(PDO::FETCH_COLUMN, 0);
+    if (!$codesList) { return; }
+    $codes = implode(',', array_map('trim', $codesList));
 
-        if ($row) {
-            $apiKey = $row['api_key'];
-            $provider = $row['provider'];
+    // Get user's main currency code
+    $stmt = $pdo->prepare('SELECT u.main_currency, c.code FROM users u LEFT JOIN currencies c ON u.main_currency = c.id WHERE u.id = :uid');
+    $stmt->execute([':uid' => $userId]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$row) { return; }
+    $mainCurrencyCode = $row['code'];
 
-            $codes = "";
-            $query = "SELECT id, name, symbol, code FROM currencies";
-            $result = $db->query($query);
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                $codes .= $row['code'] . ",";
-            }
-            $codes = rtrim($codes, ',');
+    // Fetch rates (Fixer or APIlayer)
+    if ((int)$fx['provider'] === 1) {
+        $api_url = 'https://api.apilayer.com/fixer/latest?base=EUR&symbols=' . $codes;
+        $context = stream_context_create(['http' => ['method' => 'GET', 'header' => 'apikey: ' . $fx['api_key']]]);
+        $response = @file_get_contents($api_url, false, $context);
+    } else {
+        $api_url = 'http://data.fixer.io/api/latest?access_key=' . $fx['api_key'] . '&base=EUR&symbols=' . $codes;
+        $response = @file_get_contents($api_url);
+    }
+    $apiData = $response ? json_decode($response, true) : null;
+    if (!$apiData || !isset($apiData['rates'][$mainCurrencyCode])) { return; }
 
-            $query = "SELECT u.main_currency, c.code FROM user u LEFT JOIN currencies c ON u.main_currency = c.id WHERE u.id = :userId";
-            $stmt = $pdo->prepare($query);
-            $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-            $stmt->execute();
-            $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            $mainCurrencyCode = $row['code'];
-            $mainCurrencyId = $row['main_currency'];
+    $mainCurrencyToEUR = (float)$apiData['rates'][$mainCurrencyCode];
+    if (!isset($apiData['rates'])) { return; }
 
-            if ($provider === 1) {
-                $api_url = "https://api.apilayer.com/fixer/latest?base=EUR&symbols=" . $codes;
-                $context = stream_context_create([
-                    'http' => [
-                        'method' => 'GET',
-                        'header' => 'apikey: ' . $apiKey,
-                    ]
-                ]);
-                $response = file_get_contents($api_url, false, $context);
-            } else {
-                $api_url = "http://data.fixer.io/api/latest?access_key=" . $apiKey . "&base=EUR&symbols=" . $codes;
-                $response = file_get_contents($api_url);
-            }
+    foreach ($apiData['rates'] as $currencyCode => $rate) {
+        $exchangeRate = ($currencyCode === $mainCurrencyCode) ? 1.0 : ((float)$rate / $mainCurrencyToEUR);
+        $updateStmt = $pdo->prepare('UPDATE currencies SET rate = :rate WHERE code = :code AND user_id = :uid');
+        $updateStmt->execute([':rate' => $exchangeRate, ':code' => $currencyCode, ':uid' => $userId]);
+    }
 
-            $apiData = json_decode($response, true);
-
-            $mainCurrencyToEUR = $apiData['rates'][$mainCurrencyCode];
-
-            if ($apiData !== null && isset($apiData['rates'])) {
-                foreach ($apiData['rates'] as $currencyCode => $rate) {
-                    if ($currencyCode === $mainCurrencyCode) {
-                        $exchangeRate = 1.0;
-                    } else {
-                        $exchangeRate = $rate / $mainCurrencyToEUR;
-                    }
-                    $updateQuery = "UPDATE currencies SET rate = :rate WHERE code = :code AND user_id = :userId";
-                    $updateStmt = $pdo->prepare($updateQuery);
-                    $updateStmt->bindParam(':rate', $exchangeRate, PDO::PARAM_STR);
-                    $updateStmt->bindParam(':code', $currencyCode, PDO::PARAM_STR);
-                    $updateStmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-                    $updateResult = $updateStmt->execute();
-                }
-                $currentDate = new DateTime();
-                $formattedDate = $currentDate->format('Y-m-d');
-
-                $query = "SELECT * FROM last_exchange_update WHERE user_id = :userId";
-                $stmt = $pdo->prepare($query);
-                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-                $stmt->execute();
-                $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-                if ($row) {
-                    $query = "UPDATE last_exchange_update SET date = :formattedDate WHERE user_id = :userId";
-                } else {
-                    $query = "INSERT INTO last_exchange_update (date, user_id) VALUES (:formattedDate, :userId)";
-                }
-
-                $stmt = $pdo->prepare($query);
-                $stmt->bindParam(':formattedDate', $formattedDate, PDO::PARAM_STR);
-                $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-                $resutl = $stmt->execute();
-
-                $db->close();
-            }
-        }
+    // Upsert last update date
+    $formattedDate = (new DateTime())->format('Y-m-d');
+    $stmt = $pdo->prepare('SELECT 1 FROM last_exchange_update WHERE user_id = :uid');
+    $stmt->execute([':uid' => $userId]);
+    if ($stmt->fetch()) {
+        $pdo->prepare('UPDATE last_exchange_update SET date = :d WHERE user_id = :uid')->execute([':d' => $formattedDate, ':uid' => $userId]);
+    } else {
+        $pdo->prepare('INSERT INTO last_exchange_update (date, user_id) VALUES (:d, :uid)')->execute([':d' => $formattedDate, ':uid' => $userId]);
     }
 }
 
@@ -209,6 +177,7 @@ if (
     $firstname = validate($_POST['firstname']);
     $lastname = validate($_POST['lastname']);
     $email = validate($_POST['email']);
+    $username = isset($_POST['username']) ? trim(validate($_POST['username'])) : '';
 
     $query = "SELECT email FROM users WHERE id = :user_id";
     $stmt = $pdo->prepare($query);
@@ -278,10 +247,20 @@ if (
         }
     }
 
+    // Validate username if provided and different
+    if ($username !== '') {
+        $stmt = $pdo->prepare('SELECT COUNT(*) FROM users WHERE username = :u AND id <> :id');
+        $stmt->execute([':u' => $username, ':id' => $userId]);
+        if ((int)$stmt->fetchColumn() > 0) {
+            echo json_encode([ 'success' => false, 'errorMessage' => translate('username_exists', $i18n) ]);
+            exit();
+        }
+    }
+
     if (isset($_POST['password']) && $_POST['password'] != "" && !$demoMode) {
-        $sql = "UPDATE users SET avatar = :avatar, firstname = :firstname, lastname = :lastname, email = :email, password = :password, main_currency = :main_currency, language = :language WHERE id = :userId";
+        $sql = "UPDATE users SET avatar = :avatar, firstname = :firstname, lastname = :lastname, email = :email, password_hash = :password_hash, main_currency = :main_currency, language = :language" . ($username!==''?", username = :username":"") . " WHERE id = :userId";
     } else {
-        $sql = "UPDATE users SET avatar = :avatar, firstname = :firstname, lastname = :lastname, email = :email, main_currency = :main_currency, language = :language WHERE id = :userId";
+        $sql = "UPDATE users SET avatar = :avatar, firstname = :firstname, lastname = :lastname, email = :email, main_currency = :main_currency, language = :language" . ($username!==''?", username = :username":"") . " WHERE id = :userId";
     }
 
     $stmt = $pdo->prepare($sql);
@@ -293,9 +272,11 @@ if (
     $stmt->bindParam(':language', $language, PDO::PARAM_STR);
     $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
 
+    if ($username !== '') { $stmt->bindParam(':username', $username, PDO::PARAM_STR); }
+
     if (isset($_POST['password']) && $_POST['password'] != "" && !$demoMode) {
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-        $stmt->bindParam(':password', $hashedPassword, PDO::PARAM_STR);
+        $stmt->bindParam(':password_hash', $hashedPassword, PDO::PARAM_STR);
     }
 
     $stmt->execute();
@@ -312,6 +293,7 @@ if (
         ]);
         $_SESSION['firstname'] = $firstname;
         $_SESSION['avatar'] = $avatar;
+        if ($username !== '') { $_SESSION['username'] = $username; }
         $_SESSION['main_currency'] = $main_currency;
 
         if ($main_currency != $mainCurrencyId) {

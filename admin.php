@@ -35,7 +35,7 @@ if ($oidcSettings === false) {
     ];
 }
 
-// get user accounts
+// get user accounts (legacy table `user` for listing)
 $stmt = $pdo->prepare('SELECT id, username, email FROM user ORDER BY id ASC');
 $stmt->execute();
 
@@ -44,6 +44,20 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $users[] = $row;
 }
 $userCount = is_array($users) ? count($users) : 0;
+
+// Map email -> is_verified from `users` table (may differ from legacy `user`)
+$verifiedMap = [];
+if (!empty($users)) {
+    $emails = array_values(array_unique(array_filter(array_map(function($u){ return $u['email'] ?? null; }, $users))));
+    if (!empty($emails)) {
+        $placeholders = implode(',', array_fill(0, count($emails), '?'));
+        $q = $pdo->prepare("SELECT email, COALESCE(is_verified,0) AS is_verified FROM users WHERE email IN ($placeholders)");
+        $q->execute($emails);
+        while ($r = $q->fetch(PDO::FETCH_ASSOC)) {
+            $verifiedMap[$r['email']] = (int)$r['is_verified'] === 1;
+        }
+    }
+}
 
 $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
 ?>
@@ -137,12 +151,20 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
             <header>
                 <h2><?= translate('user_management', $i18n) ?></h2>
             </header>
+            <style>
+                .verified-badge { display:inline-block; margin-left:8px; padding:2px 6px; border-radius:10px; background:#e6f6ee; color:#13795b; font-size:12px; vertical-align:middle; }
+                .button.tiny.disabled { opacity:.5; cursor:not-allowed; }
+            </style>
             <div class="user-list">
                 <?php
                 foreach ($users as $user) {
                     $userIcon = $user['id'] == 1 ? 'fa-user-tie' : 'fa-id-badge';
+                    $isVerified = false;
+                    if (!empty($user['email']) && isset($verifiedMap[$user['email']])) {
+                        $isVerified = $verifiedMap[$user['email']];
+                    }
                     ?>
-                    <div class="form-group-inline" data-userid="<?= $user['id'] ?>">
+                    <div class="form-group-inline" data-userid="<?= $user['id'] ?>" data-email="<?= htmlspecialchars($user['email'] ?? '', ENT_QUOTES) ?>">
                         <div class="user-list-row">
                             <div title="<?= translate('username', $i18n) ?>">
                                 <div class="user-list-icon">
@@ -155,12 +177,19 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
                                     <i class="fa-solid fa-envelope"></i>
                                 </div>
                                 <a href="mailto:<?= $user['email'] ?>"><?= $user['email'] ?></a>
+                                <?php if ($isVerified): ?>
+                                  <span class="verified-badge">Verified</span>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <div>
                             <?php
                             if ($user['id'] != 1) {
                                 ?>
+                                <button class="button tiny resend-btn<?= $isVerified ? ' disabled' : '' ?>" <?= $isVerified ? 'disabled' : '' ?> onClick="resendVerification('<?= htmlspecialchars($user['email'], ENT_QUOTES) ?>')"
+                                    title="<?= $isVerified ? 'User already verified — cannot resend' : 'Resend verification email' ?>">Resend</button>
+                                <button class="button tiny verify-btn<?= $isVerified ? ' disabled' : '' ?>" <?= $isVerified ? 'disabled' : '' ?> onClick="verifyUser('<?= htmlspecialchars($user['email'], ENT_QUOTES) ?>')"
+                                    title="<?= $isVerified ? 'User already verified — nothing to do' : 'Verify user' ?>"><?= $isVerified ? 'Verified' : 'Verify' ?></button>
                                 <button class="image-button medium" onClick="removeUser(<?= $user['id'] ?>)"
                                     title="<?= translate('delete_user', $i18n) ?>">
                                     <?php include "images/siteicons/svg/delete.php"; ?>
@@ -168,6 +197,8 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
                                 <?php
                             } else {
                                 ?>
+                                <button class="button tiny disabled" disabled title="Resend verification email">Resend</button>
+                                <button class="button tiny disabled" disabled title="Verify user">Verify</button>
                                 <button class="image-button medium disabled" disabled
                                     title="<?= translate('delete_user', $i18n) ?>">
                                     <?php include "images/siteicons/svg/delete.php"; ?>

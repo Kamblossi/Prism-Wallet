@@ -430,3 +430,56 @@ function saveOidcSettingsButton() {
       button.disabled = false;
     });
 }
+
+// Resend verification email for a user (admin only)
+function resendVerification(email) {
+  const data = { email };
+  fetch('endpoints/admin/resendverification.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        showSuccessMessage(d.message || 'Verification email resent.');
+      } else {
+        showErrorMessage(d.message || 'Failed to resend.');
+      }
+    })
+    .catch(() => showErrorMessage('Failed to resend.'));
+}
+
+// Mark a user as verified (admin only)
+function verifyUser(email) {
+  const data = { email };
+  fetch('endpoints/admin/verifyuser.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        showSuccessMessage(d.message || 'User verified.');
+        const row = document.querySelector(`.form-group-inline[data-email="${email}"]`);
+        if (row) {
+          const verifyBtn = row.querySelector('.verify-btn');
+          if (verifyBtn) { verifyBtn.disabled = true; verifyBtn.classList.add('disabled'); verifyBtn.textContent = 'Verified'; }
+          const resendBtn = row.querySelector('.resend-btn');
+          if (resendBtn) { resendBtn.disabled = true; resendBtn.classList.add('disabled'); }
+          const mailLink = row.querySelector('a[href^="mailto:"]');
+          const container = mailLink ? mailLink.parentElement : row.querySelector('.user-list-row');
+          if (container && !row.querySelector('.verified-badge')) {
+            const b = document.createElement('span');
+            b.className = 'verified-badge';
+            b.textContent = 'Verified';
+            container.appendChild(b);
+          }
+        }
+      } else {
+        showErrorMessage(d.message || 'Failed to verify.');
+      }
+    })
+    .catch(() => showErrorMessage('Failed to verify.'));
+}

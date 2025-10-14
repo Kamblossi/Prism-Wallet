@@ -8,7 +8,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
         $cycles = array();
         $query = "SELECT * FROM cycles";
-        $result = $db->query($query);
+        $stmt = $db->query($query);
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $cycleId = $row['id'];
             $cycles[$cycleId] = $row;
@@ -56,9 +56,9 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         $updateStmt = $pdo->prepare($updateQuery);
         $updateStmt->bindValue(':nextPaymentDate', $nextPaymentDate->format('Y-m-d'));
         $updateStmt->bindValue(':subscriptionId', $subscriptionId);
-        $updateStmt->execute();
+        $ok = $updateStmt->execute();
 
-        if ($updateStmt->execute()) {
+        if ($ok) {
             $response = [
                 "success" => true,
                 "message" => translate('success', $i18n),

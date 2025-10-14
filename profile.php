@@ -14,7 +14,7 @@ require_once 'includes/header.php';
         <header>
             <h2><?= translate('user_details', $i18n) ?></h2>
         </header>
-        <form action="endpoints/user/saveuser.php" method="post" id="userForm" enctype="multipart/form-data">
+        <form action="endpoints/user/save_user.php" method="post" id="userForm" enctype="multipart/form-data">
             <div class="user-form">
                 <div class="fields">
                     <div>
@@ -60,8 +60,7 @@ require_once 'includes/header.php';
                     <div class="grow">
                         <div class="form-group">
                             <label for="username"><?= translate('username', $i18n) ?>:</label>
-                            <input type="text" id="username" name="username" value="<?= $userData['username'] ?>"
-                                disabled>
+                            <input type="text" id="username" name="username" value="<?= htmlspecialchars($userData['username']) ?>" maxlength="40" autocomplete="off">
                         </div>
                         <div class="form-group">
                             <label for="firstname"><?= translate('firstname', $i18n) ?>:</label>

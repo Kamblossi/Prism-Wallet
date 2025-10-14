@@ -699,7 +699,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
     </section>
 
     <?php
-    $sql = "SELECT * FROM categories WHERE user_id = :userId ORDER BY `order` ASC";
+    $sql = "SELECT * FROM categories WHERE user_id = :userId ORDER BY \"order\" ASC";
     $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
     $stmt->execute();
@@ -709,7 +709,6 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $categories[] = $row;
         }
-    }
     ?>
 
     <section class="account-section">
@@ -783,7 +782,6 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $currencies[] = $row;
         }
-    }
 
     $query = "SELECT main_currency FROM users WHERE id = :userId";
     $stmt = $pdo->prepare($query);
@@ -793,7 +791,8 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
     $mainCurrencyId = $row['main_currency'];
 
     $query = "SELECT date FROM last_exchange_update";
-    $exchange_rates_last_updated = $db->querySingle($query);
+    $stmt = $pdo->query($query);
+    $exchange_rates_last_updated = $stmt ? $stmt->fetchColumn() : null;
 
     ?>
 
@@ -899,7 +898,6 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
         } else {
             $provider = 0;
         }
-    }
     ?>
 
     <section class="account-section">
@@ -1033,7 +1031,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
     </section>
 
     <?php
-    $sql = "SELECT * FROM payment_methods WHERE user_id = :userId ORDER BY `order` ASC";
+    $sql = "SELECT * FROM payment_methods WHERE user_id = :userId ORDER BY \"order\" ASC";
     $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
     $stmt->execute();
@@ -1043,7 +1041,6 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $payments[] = $row;
         }
-    }
     ?>
 
     <section class="account-section">
@@ -1054,10 +1051,10 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
             <?php
             $paymentsInUseQuery = $pdo->prepare('SELECT id FROM payment_methods WHERE user_id = :userId AND id IN (SELECT DISTINCT payment_method_id FROM subscriptions WHERE user_id = :userId)');
             $paymentsInUseQuery->bindValue(':userId', $userId, PDO::PARAM_INT);
-            $result = $paymentsInUseQuery->execute();
+            $paymentsInUseQuery->execute();
 
             $paymentsInUse = [];
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            while ($row = $paymentsInUseQuery->fetch(PDO::FETCH_ASSOC)) {
                 $paymentsInUse[] = $row['id'];
             }
 
