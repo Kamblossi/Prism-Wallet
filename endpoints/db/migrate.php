@@ -44,6 +44,28 @@ try {
         $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT");
     } catch (Throwable $e) { /* ignore */ }
 
+    // Add lifecycle columns to users (idempotent)
+    try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"); } catch (Throwable $e) { }
+    try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ"); } catch (Throwable $e) { }
+    try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ"); } catch (Throwable $e) { }
+
+    // Ensure case-insensitive unique email for non-deleted rows
+    try {
+        $exists = $pdo->query("SELECT 1 FROM pg_indexes WHERE schemaname='public' AND indexname='users_email_uniq'")->fetchColumn();
+        if (!$exists) {
+            $pdo->exec("CREATE UNIQUE INDEX users_email_uniq ON users (lower(email)) WHERE deleted_at IS NULL");
+        }
+    } catch (Throwable $e) { /* ignore */ }
+
+    // updated_at trigger
+    try {
+        $pdo->exec("CREATE OR REPLACE FUNCTION set_updated_at() RETURNS TRIGGER AS $$ BEGIN NEW.updated_at = NOW(); RETURN NEW; END; $$ LANGUAGE plpgsql;");
+        $hasTrig = $pdo->query("SELECT 1 FROM pg_trigger WHERE tgname = 'trg_users_set_updated_at'")->fetchColumn();
+        if (!$hasTrig) {
+            $pdo->exec("CREATE TRIGGER trg_users_set_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION set_updated_at();");
+        }
+    } catch (Throwable $e) { /* ignore */ }
+
     // settings
     execSql($pdo, "
         CREATE TABLE IF NOT EXISTS settings (
@@ -98,6 +120,25 @@ try {
     try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS from_email TEXT"); } catch (Throwable $e) { /* ignore */ }
     try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS encryption TEXT"); } catch (Throwable $e) { /* ignore */ }
     try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS server_url TEXT"); } catch (Throwable $e) { /* ignore */ }
+
+    // Admin audit table for tracking privileged actions
+    execSql($pdo, "
+        CREATE TABLE IF NOT EXISTS admin_audit (
+            id BIGSERIAL PRIMARY KEY,
+            actor_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+            action TEXT NOT NULL,
+            target_user_id BIGINT REFERENCES users(id) ON DELETE SET NULL,
+            target_table TEXT,
+            target_id BIGINT,
+            details JSONB,
+            ip_address INET,
+            user_agent TEXT,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    ");
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_admin_audit_created_at ON admin_audit (created_at)"); } catch (Throwable $e) { }
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_admin_audit_actor ON admin_audit (actor_user_id)"); } catch (Throwable $e) { }
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_admin_audit_target_user ON admin_audit (target_user_id)"); } catch (Throwable $e) { }
 
     // currencies
     execSql($pdo, "

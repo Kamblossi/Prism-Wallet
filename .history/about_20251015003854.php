@@ -67,7 +67,7 @@ if (!is_null($settings['latest_version'])) {
             <div>
                 <h3><?= translate('the_author', $i18n) ?></h3>
                 <span>
-                    https://newtonochieng.me
+                    https://newtonochieng..pt
                     <a href="https://henrique.pt/" target="_blank" title="<?= translate('external_url', $i18n) ?>"
                         rel="noreferrer">
                         <i class="fa-solid fa-arrow-up-right-from-square"></i>

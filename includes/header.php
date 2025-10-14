@@ -211,18 +211,20 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
             <a href="profile.php">
               <?php include "images/siteicons/svg/mobile-menu/profile.php"; ?>
               <?= translate('profile', $i18n) ?></a>  
+            <a href="about.php">
+              <?php include "images/siteicons/svg/mobile-menu/about.php"; ?>
+              <?= translate('about', $i18n) ?>
+            </a>
             <?php if ($isAdmin): ?>
               <a href="admin.php">
                 <?php include "images/siteicons/svg/mobile-menu/admin.php"; ?>
                 <?= translate('admin', $i18n) ?>
               </a>
             <?php endif; ?>
-            <a href="about.php">
-              <?php include "images/siteicons/svg/mobile-menu/about.php"; ?>
-              <?= translate('about', $i18n) ?>
-            </a>
             <?php
-            if ($settings['disableLogin'] == 0) {
+            // Show logout only when login is not disabled; be defensive if key is missing
+            $disableLoginFlag = isset($settings['disableLogin']) ? (int)$settings['disableLogin'] : 0;
+            if ($disableLoginFlag === 0) {
               ?>
               <a href="logout.php">
                 <?php include "images/siteicons/svg/mobile-menu/logout.php"; ?>
@@ -245,6 +247,7 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
   $statsClass = $page === 'stats.php' ? 'active' : '';
   $settingsClass = $page === 'settings.php' ? 'active' : '';
   $profileClass = $page === 'profile.php' ? 'active' : '';
+  $adminClass = $page === 'admin.php' ? 'active' : '';
   ?>
 
   <?php
@@ -267,6 +270,12 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
           <?php include "images/siteicons/svg/mobile-menu/statistics.php"; ?>
           <?= translate('stats', $i18n) ?>
         </a>
+        <?php if ($isAdmin): ?>
+        <a href="admin.php" class="nav-link <?= $adminClass ?>" title="<?= translate('admin', $i18n) ?>">
+          <?php include "images/siteicons/svg/mobile-menu/admin.php"; ?>
+          <?= translate('admin', $i18n) ?>
+        </a>
+        <?php endif; ?>
         <a href="settings.php" class="nav-link <?= $settingsClass ?>" title="<?= translate('settings', $i18n) ?>">
           <?php include "images/siteicons/svg/mobile-menu/settings.php"; ?>
           <?= translate('settings', $i18n) ?>

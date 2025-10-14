@@ -54,10 +54,9 @@ $query = "SELECT * FROM admin";
 $stmt = $pdo->query($query);
 $adminSettings = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($adminSettings !== false) {
-    $settings['disableLogin'] = $adminSettings['login_disabled'];
-    $settings['update_notification'] = $adminSettings['update_notification'];
-    $settings['latest_version'] = $adminSettings['latest_version'];
-}
+// Ensure admin-related settings are always defined with safe defaults
+$settings['disableLogin'] = $adminSettings['login_disabled'] ?? 0;
+$settings['update_notification'] = $adminSettings['update_notification'] ?? 0;
+$settings['latest_version'] = $adminSettings['latest_version'] ?? null;
 
 ?>

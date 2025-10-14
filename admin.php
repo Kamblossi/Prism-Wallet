@@ -35,8 +35,8 @@ if ($oidcSettings === false) {
     ];
 }
 
-// get user accounts (legacy table `user` for listing)
-$stmt = $pdo->prepare('SELECT id, username, email FROM user ORDER BY id ASC');
+// get user accounts from unified `users` table for listing
+$stmt = $pdo->prepare('SELECT id, username, email FROM users ORDER BY id ASC');
 $stmt->execute();
 
 $users = [];
