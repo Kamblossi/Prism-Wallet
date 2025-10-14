@@ -42,7 +42,8 @@ if ($_SERVER["REQUEST_METHOD"] === "GET") {
     $data = $_GET;
     if (isset($data['generate']) && $data['generate'] == true) {
         $secret = base32_encode(bin2hex(random_bytes(20)));
-        $qrCodeUrl = "otpauth://totp/Wallos:" . $_SESSION['username'] . "?secret=" . $secret . "&issuer=Wallos";
+        $label = isset($_SESSION['username']) && $_SESSION['username'] ? $_SESSION['username'] : 'user';
+        $qrCodeUrl = "otpauth://totp/Wallos:" . $label . "?secret=" . $secret . "&issuer=Wallos";
         $response = [
             "success" => true,
             "secret" => $secret,

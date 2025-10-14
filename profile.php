@@ -26,7 +26,7 @@ require_once 'includes/header.php';
                             </span>
                         </div>
 
-                        <input type="hidden" name="avatar" value="<?= htmlspecialchars($userData['avatar'], ENT_QUOTES, 'UTF-8') ?>" id="avatarUser" />
+                        <input type="hidden" name="avatar" value="<?= htmlspecialchars($userData['avatar'] ?? 'images/avatars/0.svg', ENT_QUOTES, 'UTF-8') ?>" id="avatarUser" />
                         <div class="avatar-select" id="avatarSelect">
                             <div class="avatar-list">
                                 <?php foreach (scandir('images/avatars') as $index => $image): ?>
@@ -35,7 +35,7 @@ require_once 'includes/header.php';
                                             data-src="images/avatars/<?= $image ?>">
                                     <?php endif ?>
                                 <?php endforeach ?>
-                                <?php foreach (scandir('images/uploads/logos/avatars') as $index => $image): ?>
+                                <?php if (is_dir('images/uploads/logos/avatars')): foreach (scandir('images/uploads/logos/avatars') as $index => $image): ?>
                                     <?php if (!str_starts_with($image, '.')): ?>
                                         <div class="avatar-container" data-src="<?= $image ?>">
                                             <img src="images/uploads/logos/avatars/<?= $image ?>" alt="<?= $image ?>"
@@ -46,7 +46,7 @@ require_once 'includes/header.php';
                                             </div>
                                         </div>
                                     <?php endif ?>
-                                <?php endforeach ?>
+                                <?php endforeach; endif ?>
                                 <label for="profile_pic" class="add-avatar"
                                     title="<?= translate('upload_avatar', $i18n) ?>">
                                     <i class="fa-solid fa-arrow-up-from-bracket"></i>
@@ -85,27 +85,26 @@ require_once 'includes/header.php';
                         <?php
                         $currencies = array();
                         $query = "SELECT * FROM currencies WHERE user_id = :userId";
-                        $query = $pdo->prepare($query);
-                        $query->bindValue(':userId', $userId, PDO::PARAM_INT);
-                        $result = $query->execute();
+                        $stmt = $pdo->prepare($query);
+                        $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+                        $result = $stmt->execute();
                         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                             $currencyId = $row['id'];
                             $currencies[$currencyId] = $row;
                         }
-                        $userData['currency_symbol'] = "€";
                         ?>
                         <div class="form-group">
                             <label for="currency"><?= translate('main_currency', $i18n) ?>:</label>
                             <select id="currency" name="main_currency" placeholder="Currency">
                                 <?php
-                                foreach ($currencies as $currency) {
-                                    $selected = "";
-                                    if ($currency['id'] == $userData['main_currency']) {
-                                        $selected = "selected";
-                                        $userData['currency_symbol'] = $currency['symbol'];
-                                    }
+                                $stmt2 = $pdo->prepare("SELECT * FROM currencies WHERE user_id = :userId ORDER BY id ASC");
+                                $stmt2->bindValue(':userId', $userId, PDO::PARAM_INT);
+                                $stmt2->execute();
+                                while ($currency = $stmt2->fetch(PDO::FETCH_ASSOC)) {
+                                    $selected = ($currency['id'] == ($userData['main_currency'] ?? null)) ? 'selected' : '';
+                                    if ($selected) { $userData['currency_symbol'] = $currency['symbol']; }
                                     ?>
-                                    <option value="<?= $currency['id'] ?>" <?= $selected ?>><?= $currency['name'] ?></option>
+                                    <option value="<?= $currency['id'] ?>" <?= $selected ?>><?= htmlspecialchars($currency['name']) ?></option>
                                     <?php
                                 }
                                 ?>
@@ -139,7 +138,7 @@ require_once 'includes/header.php';
     $stmt = $pdo->prepare($sql);
     $stmt->execute();
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
-    $loginDisabled = $row['login_disabled'];
+    $loginDisabled = $row && isset($row['login_disabled']) ? (int)$row['login_disabled'] : 0;
 
     $showTotpSection = true;
     if ($loginDisabled && !$userData['totp_enabled']) {
@@ -155,7 +154,7 @@ require_once 'includes/header.php';
             <div class="account-2fa">
                 <div class="buttons">
                     <?php
-                    if (!$userData['totp_enabled']) {
+                    if (!(isset($userData['totp_enabled']) ? $userData['totp_enabled'] : 0)) {
                         ?>
                         <input type="button" value="<?= translate('enable_two_factor_authentication', $i18n) ?>" id="enableTotp"
                             onClick="enableTotp()" class="button thin mobile-grow"/>
@@ -225,7 +224,7 @@ require_once 'includes/header.php';
                     <p>
                         <i class="fa-solid fa-circle-info"></i>
                         <?php
-                        if (!$userData['totp_enabled']) {
+                        if (!(isset($userData['totp_enabled']) ? $userData['totp_enabled'] : 0)) {
                             echo translate('two_factor_info', $i18n);
                         } else {
                             echo translate('two_factor_enabled_info', $i18n);
@@ -246,7 +245,7 @@ require_once 'includes/header.php';
         </header>
         <div class="account-api-key">
             <div class="form-group-inline">
-                <input type="text" id="apikey" name="apikey" value="<?= $userData['api_key'] ?>" placeholder="API Key" readonly>
+                <input type="text" id="apikey" name="apikey" value="<?= $userData['api_key'] ?? '' ?>" placeholder="API Key" readonly>
                 <input type="submit" value="<?= translate('regenerate', $i18n) ?>" id="regenerateApiKey" onClick="regenerateApiKey()" />
             </div>
             <div class="settings-notes">

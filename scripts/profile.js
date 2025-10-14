@@ -8,7 +8,14 @@ document.addEventListener('DOMContentLoaded', function () {
             method: "POST",
             body: formData
         })
-            .then(response => response.json())
+            .then(async response => {
+                try {
+                    return await response.json();
+                } catch (e) {
+                    // Handle non-JSON (e.g., PHP fatal output)
+                    return { success: false, errorMessage: translate('unknown_error') };
+                }
+            })
             .then(data => {
                 if (data.success) {
                     document.getElementById("avatar").src = document.getElementById("avatarImg").src;
@@ -25,6 +32,9 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .catch(error => {
                 showErrorMessage(translate('unknown_error'));
+            })
+            .finally(() => {
+                document.getElementById("userSubmit").disabled = false;
             });
     });
 

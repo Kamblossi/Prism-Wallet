@@ -2,6 +2,15 @@
 // Lightweight endpoint connector: reuse main Postgres PDO connection
 require_once __DIR__ . '/connect.php';
 
+// Load i18n for endpoints that return localized messages
+try {
+    require_once __DIR__ . '/i18n/languages.php';
+    require_once __DIR__ . '/i18n/getlang.php';
+    require_once __DIR__ . '/i18n/' . $lang . '.php';
+} catch (Throwable $e) {
+    // Endpoints should not fail if i18n is unavailable; they can still return plain strings
+}
+
 // JSON by default for endpoints
 if (!headers_sent()) {
     header('Content-Type: application/json');
@@ -13,7 +22,7 @@ try {
     if (session_status() === PHP_SESSION_NONE) {
         @session_start();
     }
-    if ($session && method_exists($session, 'isLoggedIn') && $session->isLoggedIn()) {
+    if (isset($session) && $session && method_exists($session, 'isLoggedIn') && $session->isLoggedIn()) {
         // Provide $userId for queries
         if (!isset($userId) && method_exists($session, 'getUserId')) {
             $userId = $session->getUserId();
@@ -26,4 +35,3 @@ try {
 }
 
 ?>
-

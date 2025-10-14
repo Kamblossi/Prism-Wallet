@@ -25,13 +25,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // create user with is_verified = 0 and a verification token that expires in 1 hour
         $token = bin2hex(random_bytes(16));
         $expires = (new DateTimeImmutable('+1 hour'))->format('Y-m-d H:i:sP');
-        $stmt = $pdo->prepare("INSERT INTO users (clerk_id, username, email, firstname, lastname, is_admin, avatar, language, budget, password_hash, is_verified, verification_token, token_expires_at) VALUES (:cid, :username, :email, :firstname, :lastname, FALSE, 'user.svg', 'en', 0, :ph, 0, :vt, :vx) RETURNING id");
+        // Pick a random built-in avatar filename from images/avatars
+        $avatarDir = __DIR__ . '/images/avatars';
+        $choices = [];
+        if (is_dir($avatarDir)) {
+          foreach (scandir($avatarDir) as $img) {
+            if ($img[0] === '.') { continue; }
+            $ext = strtolower(pathinfo($img, PATHINFO_EXTENSION));
+            if (in_array($ext, ['svg','png','jpg','jpeg','gif','webp'], true)) {
+              $choices[] = $img;
+            }
+          }
+        }
+        $randomAvatar = $choices ? $choices[random_int(0, count($choices)-1)] : '0.svg';
+
+        $stmt = $pdo->prepare("INSERT INTO users (clerk_id, username, email, firstname, lastname, is_admin, avatar, language, budget, password_hash, is_verified, verification_token, token_expires_at) VALUES (:cid, :username, :email, :firstname, :lastname, FALSE, :avatar, 'en', 0, :ph, 0, :vt, :vx) RETURNING id");
         $stmt->execute([
           'cid' => 'local-'.bin2hex(random_bytes(6)),
           'username' => ($firstname !== '' ? $firstname : explode('@',$email)[0]),
           'email' => $email,
           'firstname' => $firstname,
           'lastname' => $lastname,
+          'avatar' => $randomAvatar,
           'ph' => $hash,
           'vt' => $token,
           'vx' => $expires,

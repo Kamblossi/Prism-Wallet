@@ -24,7 +24,7 @@ if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
 $statement = $pdo->prepare('SELECT totp_enabled FROM users WHERE id = :id');
 $statement->bindValue(':id', $userId, PDO::PARAM_INT);
 $result = $statement->execute();
-$row = $stmt->fetch(PDO::FETCH_ASSOC);
+$row = $statement->fetch(PDO::FETCH_ASSOC);
 
 if ($row['totp_enabled'] == 0) {
     die(json_encode([
@@ -57,13 +57,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $statement = $pdo->prepare('SELECT totp_secret FROM totp WHERE user_id = :id');
         $statement->bindValue(':id', $userId, PDO::PARAM_INT);
         $result = $statement->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $row = $statement->fetch(PDO::FETCH_ASSOC);
         $secret = $row['totp_secret'];
 
         $statement = $pdo->prepare('SELECT backup_codes FROM totp WHERE user_id = :id');
         $statement->bindValue(':id', $userId, PDO::PARAM_INT);
         $result = $statement->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+        $row = $statement->fetch(PDO::FETCH_ASSOC);
         $backupCodes = $row['backup_codes'];
 
         $clock = new OTPHP\InternalClock();

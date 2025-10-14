@@ -7,6 +7,15 @@ if (!file_exists('../../images/uploads/logos')) {
     mkdir('../../images/uploads/logos/avatars', 0777, true);
 }
 
+$loggedIn = isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true;
+if (!$loggedIn || empty($userId)) {
+    echo json_encode([
+        'success' => false,
+        'errorMessage' => translate('session_expired', $i18n) ?? 'Session expired'
+    ]);
+    exit();
+}
+
 function update_exchange_rate($db, $userId)
 {
     // Use global PDO
@@ -70,7 +79,7 @@ $stmt = $pdo->prepare($query);
 $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
 $stmt->execute();
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
-$mainCurrencyId = $row['main_currency'];
+$mainCurrencyId = $row && isset($row['main_currency']) ? $row['main_currency'] : null;
 
 function sanitizeFilename($filename)
 {
@@ -165,8 +174,7 @@ function resizeAndUploadAvatar($uploadedFile, $uploadDir, $name)
 }
 
 if (
-    isset($_SESSION['username']) 
-    && isset($_POST['firstname'])
+    isset($_POST['firstname'])
     && isset($_POST['lastname'])
     && isset($_POST['email']) && $_POST['email'] !== ""
     && isset($_POST['avatar']) && $_POST['avatar'] !== ""
@@ -281,40 +289,34 @@ if (
 
     $stmt->execute();
 
-    // PDO conversion - removed result check
-        $cookieExpire = time() + (30 * 24 * 60 * 60);
-        $oldLanguage = isset($_COOKIE['language']) ? $_COOKIE['language'] : "en";
-        $root = str_replace('/endpoints/user', '', dirname($_SERVER['PHP_SELF']));
-        $root = $root == '' ? '/' : $root;
-        setcookie('language', $language, [
-            'path' => $root,
-            'expires' => $cookieExpire,
-            'samesite' => 'Strict'
-        ]);
-        $_SESSION['firstname'] = $firstname;
-        $_SESSION['avatar'] = $avatar;
-        if ($username !== '') { $_SESSION['username'] = $username; }
-        $_SESSION['main_currency'] = $main_currency;
+    // Always refresh client-side state and respond with JSON on success
+    $cookieExpire = time() + (30 * 24 * 60 * 60);
+    $oldLanguage = isset($_COOKIE['language']) ? $_COOKIE['language'] : "en";
+    $root = str_replace('/endpoints/user', '', dirname($_SERVER['PHP_SELF']));
+    $root = $root == '' ? '/' : $root;
+    setcookie('language', $language, [
+        'path' => $root,
+        'expires' => $cookieExpire,
+        'samesite' => 'Strict'
+    ]);
+    $_SESSION['firstname'] = $firstname;
+    $_SESSION['avatar'] = $avatar;
+    if ($username !== '') { $_SESSION['username'] = $username; }
+    $_SESSION['main_currency'] = $main_currency;
 
-        if ($main_currency != $mainCurrencyId) {
-            update_exchange_rate($db, $userId);
-        }
-
-        $reload = $oldLanguage != $language;
-
-        $response = [
-            "success" => true,
-            "message" => translate('user_details_saved', $i18n),
-            "reload" => $reload
-        ];
-        echo json_encode($response);
-    } else {
-        $response = [
-            "success" => false,
-            "errorMessage" => translate('error_updating_user_data', $i18n)
-        ];
-        echo json_encode($response);
+    if ($main_currency != $mainCurrencyId) {
+        // Avoid undefined variable notices – pass a defined placeholder
+        update_exchange_rate($pdo, $userId);
     }
+
+    $reload = $oldLanguage != $language;
+
+    $response = [
+        "success" => true,
+        "message" => translate('user_details_saved', $i18n),
+        "reload" => $reload
+    ];
+    echo json_encode($response);
 
     exit();
 } else {

@@ -102,6 +102,19 @@ if ($disableAuth && (int)$disableAuth === 1) {
             }
         } catch (Throwable $e) { /* ignore */ }
 
+        // Seed at least one currency if missing for the user
+        try {
+            $stmt = $pdo->prepare('SELECT COUNT(*) FROM currencies WHERE user_id = :id');
+            $stmt->execute([':id' => $userId]);
+            $countCur = (int)$stmt->fetchColumn();
+            if ($countCur === 0) {
+                $ins = $pdo->prepare("INSERT INTO currencies (user_id, name, symbol, code, rate) VALUES (:uid, 'US Dollar', '$', 'USD', 1) RETURNING id");
+                $ins->execute([':uid' => $userId]);
+                $usdId = (int)$ins->fetchColumn();
+                $pdo->prepare('UPDATE users SET main_currency = :cid WHERE id = :uid')->execute([':cid' => $usdId, ':uid' => $userId]);
+            }
+        } catch (Throwable $e) { /* ignore */ }
+
         // Seed default payment methods if none exist
         try {
             $stmt = $pdo->prepare('SELECT COUNT(*) FROM payment_methods WHERE user_id = :id');
@@ -155,9 +168,23 @@ if ($disableAuth && (int)$disableAuth === 1) {
     }
 }
 
-// Set default avatar if empty
+// Set safe defaults for optional fields
 if (empty($userData['avatar'])) {
-    $userData['avatar'] = "0";
+    // Use a valid bundled avatar path (index 0)
+    $userData['avatar'] = 'images/avatars/0.svg';
+}
+// Normalize legacy avatar values (e.g., 'user.svg' -> images/avatars/0.svg)
+if (!empty($userData['avatar']) && strpos($userData['avatar'], '/') === false) {
+    $candidate = 'images/avatars/' . $userData['avatar'];
+    // If legacy 'user.svg' was stored, map to 0.svg (bundled)
+    if (basename($candidate) === 'user.svg' && !file_exists(__DIR__ . '/../' . $candidate)) {
+        $userData['avatar'] = 'images/avatars/0.svg';
+    } else {
+        $userData['avatar'] = $candidate;
+    }
+}
+if (!isset($userData['totp_enabled'])) {
+    $userData['totp_enabled'] = 0;
 }
 
 // No more cookie or session handling - Clerk handles all authentication

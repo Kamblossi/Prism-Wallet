@@ -20,20 +20,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $stmt->bindValue(':userId', $userId, PDO::PARAM_STR);
     $stmt->execute();
 
-    // PDO conversion - removed result check
-        $response = [
-            "success" => true,
-            "message" => translate('user_details_saved', $i18n),
-            "apiKey" => $apiKey
-        ];
-        echo json_encode($response);
-    } else {
-        $response = [
-            "success" => false,
-            "message" => translate('error_updating_user_data', $i18n)
-        ];
-        echo json_encode($response);
-    }
+    // Always return success JSON when the UPDATE completes
+    $response = [
+        "success" => true,
+        "message" => translate('user_details_saved', $i18n),
+        "apiKey" => $apiKey
+    ];
+    echo json_encode($response);
 
 }
 
