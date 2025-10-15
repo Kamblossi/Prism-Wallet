@@ -75,13 +75,11 @@ $usesMultipleCurrencies = count($currenciesInUse) > 1;
 
 $showCantConverErrorMessage = false;
 if ($usesMultipleCurrencies) {
-  $query = "SELECT api_key FROM fixer WHERE user_id = :userId";
-  $stmt = $pdo->prepare($query);
-  $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-  $stmt->execute();
-  if ($stmt->fetch(PDO::FETCH_ASSOC) === false) {
-    $showCantConverErrorMessage = true;
-  }
+  // Use global admin Fixer key
+  try {
+    $row = $pdo->query('SELECT fixer_api_key FROM admin ORDER BY id ASC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+    if (!$row || empty($row['fixer_api_key'])) { $showCantConverErrorMessage = true; }
+  } catch (Throwable $e) { $showCantConverErrorMessage = true; }
 }
 
 // Get code of main currency to display on statistics

@@ -18,7 +18,6 @@ if (!headers_sent()) {
 
 // Map session to commonly expected globals for legacy endpoint scripts
 try {
-    $provider = $_ENV['AUTH_PROVIDER'] ?? getenv('AUTH_PROVIDER') ?? 'clerk';
     if (session_status() === PHP_SESSION_NONE) {
         @session_start();
     }

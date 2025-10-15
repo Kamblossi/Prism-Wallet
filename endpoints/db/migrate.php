@@ -15,22 +15,20 @@ try {
     // Enable standard public schema
     execSql($pdo, "SET search_path TO public");
 
-    // users
+    // users (no Clerk dependency)
     execSql($pdo, "
         CREATE TABLE IF NOT EXISTS users (
             id BIGSERIAL PRIMARY KEY,
-            clerk_id TEXT UNIQUE NOT NULL,
             username TEXT,
             email TEXT,
             firstname TEXT,
             lastname TEXT,
             main_currency BIGINT,
-            avatar TEXT DEFAULT 'user.svg',
+            avatar TEXT DEFAULT 'images/avatars/0.svg',
             is_admin BOOLEAN DEFAULT FALSE,
             language TEXT DEFAULT 'en',
             budget NUMERIC(12,2) DEFAULT 0,
             password_hash TEXT,
-            -- Email verification fields (added to base schema to avoid first-run issues)
             is_verified SMALLINT DEFAULT 0,
             verification_token TEXT,
             token_expires_at TIMESTAMPTZ,
@@ -39,7 +37,12 @@ try {
         )
     ");
 
-    // Ensure password_hash column exists for local auth (idempotent)
+    // Ensure clerk_id removed/nullable and password_hash exists (idempotent)
+    try { $pdo->exec("ALTER TABLE users ALTER COLUMN clerk_id DROP NOT NULL"); } catch (Throwable $e) { }
+    try {
+        $idx = $pdo->query("SELECT indexname FROM pg_indexes WHERE tablename='users' AND indexdef ILIKE '%(clerk_id%' LIMIT 1")->fetchColumn();
+        if ($idx) { $pdo->exec("DROP INDEX IF EXISTS \"$idx\""); }
+    } catch (Throwable $e) { }
     try {
         $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT");
     } catch (Throwable $e) { /* ignore */ }
@@ -48,6 +51,7 @@ try {
     try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"); } catch (Throwable $e) { }
     try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TIMESTAMPTZ"); } catch (Throwable $e) { }
     try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ"); } catch (Throwable $e) { }
+    try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS session_version INTEGER DEFAULT 0"); } catch (Throwable $e) { }
 
     // Ensure case-insensitive unique email for non-deleted rows
     try {
@@ -120,6 +124,26 @@ try {
     try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS from_email TEXT"); } catch (Throwable $e) { /* ignore */ }
     try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS encryption TEXT"); } catch (Throwable $e) { /* ignore */ }
     try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS server_url TEXT"); } catch (Throwable $e) { /* ignore */ }
+    // Global Fixer & AI settings managed by admin
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS fixer_api_key TEXT"); } catch (Throwable $e) { }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS fixer_provider SMALLINT DEFAULT 0"); } catch (Throwable $e) { }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS ai_enabled SMALLINT DEFAULT 0"); } catch (Throwable $e) { }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS ai_type TEXT"); } catch (Throwable $e) { }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS ai_api_key TEXT"); } catch (Throwable $e) { }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS ai_model TEXT"); } catch (Throwable $e) { }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS ai_url TEXT"); } catch (Throwable $e) { }
+    // Ensure registration controls exist (used by admin.php and endpoints)
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS registrations_open BOOLEAN DEFAULT FALSE"); } catch (Throwable $e) { /* ignore */ }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS max_users INTEGER DEFAULT 0"); } catch (Throwable $e) { /* ignore */ }
+    try { $pdo->exec("ALTER TABLE admin ADD COLUMN IF NOT EXISTS require_email_verification SMALLINT DEFAULT 0"); } catch (Throwable $e) { /* ignore */ }
+
+    // Seed a default admin row if table is empty so admin.php has values
+    try {
+        $cntAdmin = (int)$pdo->query('SELECT COUNT(*) FROM admin')->fetchColumn();
+        if ($cntAdmin === 0) {
+            $pdo->exec("INSERT INTO admin (login_disabled, update_notification, latest_version, registrations_open, max_users, require_email_verification, server_url) VALUES (FALSE, FALSE, NULL, FALSE, 0, 0, '')");
+        }
+    } catch (Throwable $e) { /* ignore */ }
 
     // Admin audit table for tracking privileged actions
     execSql($pdo, "
@@ -139,6 +163,17 @@ try {
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_admin_audit_created_at ON admin_audit (created_at)"); } catch (Throwable $e) { }
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_admin_audit_actor ON admin_audit (actor_user_id)"); } catch (Throwable $e) { }
     try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_admin_audit_target_user ON admin_audit (target_user_id)"); } catch (Throwable $e) { }
+
+    // Simple rate limits table (per key per minute window)
+    execSql($pdo, "
+        CREATE TABLE IF NOT EXISTS admin_rate_limits (
+            id BIGSERIAL PRIMARY KEY,
+            rate_key TEXT NOT NULL,
+            window_start TIMESTAMPTZ NOT NULL,
+            count INTEGER NOT NULL DEFAULT 0,
+            CONSTRAINT admin_rate_limits_key UNIQUE (rate_key, window_start)
+        )
+    ");
 
     // currencies
     execSql($pdo, "
@@ -346,15 +381,35 @@ try {
     try { $pdo->exec("ALTER TABLE ntfy_notifications ADD COLUMN IF NOT EXISTS headers TEXT"); } catch (Throwable $e) { /* ignore */ }
     try { $pdo->exec("ALTER TABLE ntfy_notifications ADD COLUMN IF NOT EXISTS ignore_ssl BOOLEAN DEFAULT FALSE"); } catch (Throwable $e) { /* ignore */ }
 
-    // oauth/ai minimal tables to avoid references breaking
+    // OAuth/OIDC settings (global or per-user). Ensure full column set used by admin UI
     execSql($pdo, "
         CREATE TABLE IF NOT EXISTS oauth_settings (
             id BIGSERIAL PRIMARY KEY,
             user_id BIGINT UNIQUE REFERENCES users(id) ON DELETE CASCADE,
             oidc_oauth_enabled BOOLEAN DEFAULT FALSE,
+            name TEXT,
+            client_id TEXT,
+            client_secret TEXT,
+            authorization_url TEXT,
+            token_url TEXT,
+            user_info_url TEXT,
+            redirect_url TEXT,
+            logout_url TEXT,
+            user_identifier_field TEXT,
+            scopes TEXT,
+            auth_style TEXT,
+            auto_create_user SMALLINT DEFAULT 0,
             password_login_disabled BOOLEAN DEFAULT FALSE
         )
     ");
+    // Add missing columns if upgrading from older minimal schema
+    foreach ([
+        'name TEXT', 'client_id TEXT', 'client_secret TEXT', 'authorization_url TEXT', 'token_url TEXT',
+        'user_info_url TEXT', 'redirect_url TEXT', 'logout_url TEXT', 'user_identifier_field TEXT', 'scopes TEXT',
+        'auth_style TEXT', 'auto_create_user SMALLINT'
+    ] as $col) {
+        try { $pdo->exec("ALTER TABLE oauth_settings ADD COLUMN IF NOT EXISTS $col"); } catch (Throwable $e) { }
+    }
     execSql($pdo, "
         CREATE TABLE IF NOT EXISTS ai_settings (
             id BIGSERIAL PRIMARY KEY,

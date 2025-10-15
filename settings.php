@@ -900,50 +900,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
         }
     ?>
 
-    <section class="account-section">
-        <header>
-            <h2>Fixer API Key</h2>
-        </header>
-        <div class="account-fixer">
-            <div class="form-group">
-                <input type="text" name="fixer-key" id="fixerKey" value="<?= $apiKey ?>"
-                    placeholder="<?= translate('api_key', $i18n) ?>" <?= $demoMode ? 'disabled title="Not available on Demo Mode"' : '' ?>>
-            </div>
-            <div class="form-group">
-                <label for="fixerProvider"><?= translate('provider', $i18n) ?>:</label>
-                <select name="fixer-provider" id="fixerProvider">
-                    <option value="0" <?= $provider == 0 ? 'selected' : '' ?>>fixer.io</option>
-                    <option value="1" <?= $provider == 1 ? 'selected' : '' ?>>apilayer.com</option>
-                </select>
-            </div>
-            <div class="buttons">
-                <input type="submit" value="<?= translate('save', $i18n) ?>" id="addFixerKey"
-                    onClick="addFixerKeyButton()" class="thin mobile-grow" />
-            </div>
-            <div class="settings-notes">
-                <p><i class="fa-solid fa-circle-info"></i><?= translate('fixer_info', $i18n) ?></p>
-                <p><?= translate('get_key', $i18n) ?>:
-                    <span>
-                        https://fixer.io/
-                        <a href="https://fixer.io/#pricing_plan"
-                            title="<?= translate("get_free_fixer_api_key", $i18n) ?>" target="_blank">
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                        </a>
-                    </span>
-                </p>
-                <p>
-                    <?= translate("get_key_alternative", $i18n) ?>
-                    <span>
-                        https://apilayer.com
-                        <a href="https://apilayer.com/marketplace/fixer-api" title="Get free fixer api key"
-                            target="_blank">
-                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
-                        </a>
-                    </span>
-                </p>
-            </div>
-        </div>
-    </section>
+    <?php /* Fixer API moved to Admin panel */ ?>
 
     <?php
     $sql = "SELECT * FROM ai_settings WHERE user_id = :userId LIMIT 1";
@@ -957,78 +914,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
     }
     ?>
 
-    <section class="account-section">
-        <header>
-            <h2><?= translate('ai_recommendations', $i18n) ?></h2>
-        </header>
-        <div class="account-ai-settings">
-            <div class="form-group-inline">
-                <input type="checkbox" id="ai_enabled" name="ai_enabled" <?= isset($aiSettings['enabled']) && $aiSettings['enabled'] ? "checked" : "" ?>>
-                <label for="ai_enabled" class="capitalize"><?= translate('enabled', $i18n) ?></label>
-            </div>
-            <div class="form-group">
-                <label for="ai_type"><?= translate('provider', $i18n) ?>:</label>
-                <select id="ai_type" name="ai_type" onchange="toggleAiInputs()">
-                    <option value="chatgpt" <?= (isset($aiSettings['type']) && $aiSettings['type'] == 'chatgpt') ? 'selected' : '' ?>>ChatGPT</option>
-                    <option value="gemini" <?= (isset($aiSettings['type']) && $aiSettings['type'] == 'gemini') ? 'selected' : '' ?>>Gemini</option>
-                    <option value="ollama" <?= (isset($aiSettings['type']) && $aiSettings['type'] == 'ollama') ? 'selected' : '' ?>>Local Ollama</option>
-                </select>
-            </div>
-            <div class="form-group-inline">
-                <input type="text" id="ai_api_key" name="ai_api_key"
-                    class="<?= (isset($aiSettings['type']) && $aiSettings['type'] == 'ollama') ? 'hidden' : '' ?>"
-                    placeholder="<?= translate('api_key', $i18n) ?>"
-                    value="<?= isset($aiSettings['api_key']) ? htmlspecialchars($aiSettings['api_key']) : '' ?>" />
-                <input type="text" id="ai_ollama_host" name="ai_ollama_host"
-                    class="<?= (!isset($aiSettings['type']) || $aiSettings['type'] != 'ollama') ? 'hidden' : '' ?>"
-                    placeholder="<?= translate('host', $i18n) ?>"
-                    value="<?= isset($aiSettings['url']) ? htmlspecialchars($aiSettings['url']) : '' ?>" />
-
-                <button type="button" id="fetchModelsButton" class="button thin" onclick="fetch_ai_models()">
-                    <?= translate('test', $i18n) ?>
-                </button>
-            </div>
-            <div class="form-group">
-                <label for="ai_model"><?= translate('ai_model', $i18n) ?>:</label>
-                <select id="ai_model" name="ai_model">
-                    <option value=""><?= translate('select_ai_model', $i18n) ?></option>
-                    <?php if (!empty($aiSettings['model'])): ?>
-                        <option value="<?= htmlspecialchars($aiSettings['model']) ?>" selected>
-                            <?= htmlspecialchars($aiSettings['model']) ?></option>
-                    <?php endif; ?>
-                </select>
-            </div>
-            <div class="form-group">
-                <label for="ai_run_schedule" class="flex"><?= translate('run_schedule', $i18n) ?>: <span
-                        class="info-badge"><?= translate("coming_soon", $i18n) ?></span></span></label>
-                <select id="ai_run_schedule" name="ai_run_schedule" disabled>
-                    <option value="manual" <?= (isset($aiSettings['run_schedule']) && $aiSettings['run_schedule'] == 'manual') ? 'selected' : '' ?>><?= translate('manually', $i18n) ?>
-                    </option>
-                    <option value="weekly" <?= (isset($aiSettings['run_schedule']) && $aiSettings['run_schedule'] == 'weekly') ? 'selected' : '' ?>><?= translate('Weekly', $i18n) ?>
-                    </option>
-                    <option value="monthly" <?= (isset($aiSettings['run_schedule']) && $aiSettings['run_schedule'] == 'monthly') ? 'selected' : '' ?>><?= translate('Monthly', $i18n) ?>
-                    </option>
-                </select>
-            </div>
-            <div class="buttons wrap mobile-reverse">
-                <?php
-                $canBeExecuted = !empty($aiSettings['model']) && !empty($aiSettings['enabled']) && $aiSettings['enabled'] == 1;
-                ?>
-                <input type="button" id="runAiRecommendations"
-                    class="secondary-button thin mobile-grow-force <?= !$canBeExecuted ? 'hidden' : '' ?>"
-                    onclick="runAiRecommendations()" value="<?= translate('generate_recommendations', $i18n) ?>" />
-                <div id="aiSpinner" class="spinner ai-spinner hidden"></div>
-
-                <input type="submit" class="thin mobile-grow-force" value="<?= translate('save', $i18n) ?>"
-                    id="saveAiSettings" onClick="saveAiSettingsButton()" />
-            </div>
-            <div class="settings-notes">
-                <p><i class="fa-solid fa-circle-info"></i><?= translate('ai_recommendations_info', $i18n) ?></p>
-                <p><i class="fa-solid fa-circle-info"></i><?= translate('may_take_time', $i18n) ?></p>
-                <p><i class="fa-solid fa-circle-info"></i><?= translate('recommendations_visible_on_dashboard', $i18n) ?></p>
-            </div>
-        </div>
-    </section>
+    <?php /* AI Recommendations settings moved to Admin panel */ ?>
 
     <?php
     $sql = "SELECT * FROM payment_methods WHERE user_id = :userId ORDER BY \"order\" ASC";

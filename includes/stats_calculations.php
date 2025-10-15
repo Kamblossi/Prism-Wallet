@@ -255,13 +255,10 @@ if (isset($userData['budget']) && $userData['budget'] > 0) {
 
 $showCantConverErrorMessage = false;
 if ($usesMultipleCurrencies) {
-    $query = "SELECT api_key FROM fixer WHERE user_id = :userId";
-    $stmt = $pdo->prepare($query);
-    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-    $stmt->execute();
-    if ($stmt->fetch(PDO::FETCH_ASSOC) === false) {
-        $showCantConverErrorMessage = true;
-    }
+    try {
+        $row = $pdo->query('SELECT fixer_api_key FROM admin ORDER BY id ASC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+        if (!$row || empty($row['fixer_api_key'])) { $showCantConverErrorMessage = true; }
+    } catch (Throwable $e) { $showCantConverErrorMessage = true; }
 }
 
 $query = "SELECT * FROM total_yearly_cost WHERE user_id = :userId";

@@ -25,15 +25,11 @@ if (isset($_GET['force']) && $_GET['force'] === "true") {
     }
 }
 
-$query = "SELECT api_key, provider FROM fixer";
-$result = $db->query($query);
+$row = $pdo->query('SELECT fixer_api_key, fixer_provider FROM admin ORDER BY id ASC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
 
-// PDO conversion - removed result check
-    $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-    if ($row) {
-        $apiKey = $row['api_key'];
-        $provider = $row['provider'];
+    if ($row && !empty($row['fixer_api_key'])) {
+        $apiKey = $row['fixer_api_key'];
+        $provider = (int)$row['fixer_provider'];
 
         $codes = "";
         $query = "SELECT id, name, symbol, code FROM currencies WHERE user_id = :userId";

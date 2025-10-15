@@ -32,7 +32,7 @@ services:
       DB_NAME: ${DB_NAME:-prism_wallet_prod}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-postgres}
-      # Development convenience: bypass Clerk. Remove or set to 0 for production.
+      # Development convenience: bypass auth (not recommended). Remove or set to 0 for production.
       DISABLE_AUTH: 0
     volumes:
       - './logos:/var/www/html/images/uploads/logos'

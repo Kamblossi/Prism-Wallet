@@ -1,48 +1,25 @@
 <?php
-
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/endpoint_helpers.php';
 
-if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
-    die(json_encode([
-        "success" => false,
-        "message" => translate('session_expired', $i18n)
-    ]));
+require_admin($pdo);
+require_csrf();
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    json_error(translate('error', $i18n) ?: 'Invalid request', 405, 'invalid_method');
 }
 
-// Check that user is an admin
-if ($userId !== 1) {
-    die(json_encode([
-        "success" => false,
-        "message" => translate('error', $i18n)
-    ]));
+$data = json_decode(file_get_contents('php://input') ?: 'null', true) ?? [];
+$enabled = !empty($data['oidcEnabled']) ? 1 : 0;
+
+// Ensure row id=1 exists in oauth_settings
+$count = (int)$pdo->query('SELECT COUNT(*) FROM oauth_settings WHERE id = 1')->fetchColumn();
+if ($count === 0) {
+    $pdo->exec("INSERT INTO oauth_settings (id, oidc_oauth_enabled) VALUES (1, 0)");
 }
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
+$stmt = $pdo->prepare('UPDATE oauth_settings SET oidc_oauth_enabled = :en WHERE id = 1');
+$stmt->execute([':en' => $enabled]);
 
-    $postData = file_get_contents("php://input");
-    $data = json_decode($postData, true);
-
-    $oidcEnabled = isset($data['oidcEnabled']) ? $data['oidcEnabled'] : 0;
-
-    $stmt = $pdo->prepare('UPDATE admin SET oidc_oauth_enabled = :oidcEnabled WHERE id = 1');
-    $stmt->bindParam(':oidcEnabled', $oidcEnabled, PDO::PARAM_INT);
-    $stmt->execute();
-
-    if ($db->changes() > 0) {
-        die(json_encode([
-            "success" => true,
-            "message" => translate('success', $i18n)
-        ]));
-    } else {
-        die(json_encode([
-            "success" => false,
-            "message" => translate('error', $i18n)
-        ]));
-    }
-
-} else {
-    die(json_encode([
-        "success" => false,
-        "message" => translate('error', $i18n)
-    ]));
-}
+audit_admin_action($pdo, $enabled ? 'oidc.enable' : 'oidc.disable', null);
+json_success(translate('success', $i18n) ?: 'ok', ['enabled' => (bool)$enabled]);

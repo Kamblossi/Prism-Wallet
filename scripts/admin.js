@@ -206,31 +206,24 @@ function saveAccountRegistrationsButton() {
 }
 
 function removeUser(userId) {
-  const data = {
-    userId: userId
-  };
-
-  fetch('endpoints/admin/deleteuser.php', {
+  const headers = { 'Content-Type': 'application/json' };
+  if (window.csrfToken) headers['X-CSRF-Token'] = window.csrfToken;
+  fetch('endpoints/admin/users/delete.php', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
+    headers,
+    body: JSON.stringify({ user_id: userId })
   })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        showSuccessMessage(data.message);
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        showSuccessMessage(d.message || 'User deleted');
         const userContainer = document.querySelector(`.form-group-inline[data-userid="${userId}"]`);
-        if (userContainer) {
-          userContainer.remove();
-        }
+        if (userContainer) userContainer.remove();
       } else {
-        showErrorMessage(data.message);
+        showErrorMessage(d.message || 'Delete failed');
       }
     })
     .catch(error => showErrorMessage('Error:', error));
-
 }
 
 function addUserButton() {
@@ -247,28 +240,22 @@ function addUserButton() {
     password: password
   };
 
-  fetch('endpoints/admin/adduser.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        showSuccessMessage(data.message);
+  const headers = { 'Content-Type': 'application/json' };
+  if (window.csrfToken) headers['X-CSRF-Token'] = window.csrfToken;
+  fetch('endpoints/admin/users/create.php', { method: 'POST', headers, body: JSON.stringify(data) })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success) {
+        const tmp = d.data && d.data.temporary_password ? ` Temporary password: ${d.data.temporary_password}` : '';
+        showSuccessMessage((d.message || 'User created.') + tmp);
         button.disabled = false;
         window.location.reload();
       } else {
-        showErrorMessage(data.message);
+        showErrorMessage(d.message || 'Failed to create user.');
         button.disabled = false;
       }
     })
-    .catch(error => {
-      showErrorMessage(error);
-      button.disabled = false;
-    });
+    .catch(error => { showErrorMessage(error); button.disabled = false; });
 }
 
 function deleteUnusedLogos() {
@@ -353,9 +340,7 @@ function toggleOidcEnabled() {
 
   fetch('endpoints/admin/enableoidc.php', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: (function(){ const h={'Content-Type':'application/json'}; if(window.csrfToken) h['X-CSRF-Token']=window.csrfToken; return h; })(),
     body: JSON.stringify(data)
   })
     .then(response => response.json())
@@ -411,9 +396,7 @@ function saveOidcSettingsButton() {
 
   fetch('endpoints/admin/saveoidcsettings.php', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: (function(){ const h={'Content-Type':'application/json'}; if(window.csrfToken) h['X-CSRF-Token']=window.csrfToken; return h; })(),
     body: JSON.stringify(data)
   })
     .then(response => response.json())
@@ -431,12 +414,33 @@ function saveOidcSettingsButton() {
     });
 }
 
+function saveAdminFixerSettings(){
+  const headers = { 'Content-Type': 'application/json' }; if (window.csrfToken) headers['X-CSRF-Token']=window.csrfToken;
+  const api_key = document.getElementById('adminFixerKey').value.trim();
+  const provider = parseInt(document.getElementById('adminFixerProvider').value,10)||0;
+  fetch('endpoints/admin/save_fixer.php',{ method:'POST', headers, body: JSON.stringify({ api_key, provider })})
+    .then(r=>r.json()).then(d=>{ if(d.success){ showSuccessMessage(d.message);} else { showErrorMessage(d.message);} });
+}
+
+function saveAdminAISettings(){
+  const headers = { 'Content-Type': 'application/json' }; if (window.csrfToken) headers['X-CSRF-Token']=window.csrfToken;
+  const enabled = document.getElementById('admin_ai_enabled').checked;
+  const type = document.getElementById('admin_ai_type').value;
+  const api_key = document.getElementById('admin_ai_api_key').value.trim();
+  const url = document.getElementById('admin_ai_url').value.trim();
+  const model = document.getElementById('admin_ai_model').value.trim();
+  fetch('endpoints/admin/save_ai_settings.php',{ method:'POST', headers, body: JSON.stringify({ enabled, type, api_key, url, model })})
+    .then(r=>r.json()).then(d=>{ if(d.success){ showSuccessMessage(d.message);} else { showErrorMessage(d.message);} });
+}
+
 // Resend verification email for a user (admin only)
 function resendVerification(email) {
   const data = { email };
-  fetch('endpoints/admin/resendverification.php', {
+  const headers = { 'Content-Type': 'application/json' };
+  if (window.csrfToken) headers['X-CSRF-Token'] = window.csrfToken;
+  fetch('endpoints/admin/users/resend_verification.php', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(data)
   })
     .then(r => r.json())
@@ -453,9 +457,11 @@ function resendVerification(email) {
 // Mark a user as verified (admin only)
 function verifyUser(email) {
   const data = { email };
-  fetch('endpoints/admin/verifyuser.php', {
+  const headers = { 'Content-Type': 'application/json' };
+  if (window.csrfToken) headers['X-CSRF-Token'] = window.csrfToken;
+  fetch('endpoints/admin/users/verify.php', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify(data)
   })
     .then(r => r.json())

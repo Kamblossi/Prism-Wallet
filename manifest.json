@@ -87,18 +87,6 @@
           "sizes": "96x96"
         }
       ]
-    },
-    {
-      "name": "About",
-      "short_name": "About",
-  "description": "More info about Prism Wallet",
-      "url": "about.php",
-      "icons": [
-        {
-          "src": "images/siteicons/pwa/about.png",
-          "sizes": "96x96"
-        }
-      ]
     }
   ],
   "screenshots": [

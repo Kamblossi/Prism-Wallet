@@ -1,14 +1,15 @@
 <?php
 require_once __DIR__ . '/includes/connect.php';
 
-$auth_provider = $_ENV['AUTH_PROVIDER'] ?? getenv('AUTH_PROVIDER') ?? 'clerk';
-if ($auth_provider !== 'local') {
-  header('Location: /clerk-auth.php');
-  exit;
-}
-
 $error = '';
 $notice = '';
+
+// Offer OIDC login when enabled
+$oidcEnabled = false;
+try {
+  $row = $pdo->query('SELECT oidc_oauth_enabled FROM oauth_settings WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
+  $oidcEnabled = $row && (int)($row['oidc_oauth_enabled'] ?? 0) === 1;
+} catch (Throwable $e) { $oidcEnabled = false; }
 
 // Handle resend verification email request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resend_verification'])) {
@@ -78,6 +79,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       } else {
         if (session_status() === PHP_SESSION_NONE) session_start();
         $_SESSION['user_id'] = (int)$user['id'];
+        // Track session version for force-logout
+        $_SESSION['session_version'] = (int)($user['session_version'] ?? 0);
         header('Location: /index.php');
         exit;
       }
@@ -118,6 +121,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <button type="submit">Login</button>
     <a href="/register.php">Create an account</a>
   </form>
+
+  <?php if ($oidcEnabled): ?>
+  <div style="margin-top:12px;">
+    <form method="get" action="/endpoints/oidc/login.php">
+      <button type="submit">Login with Single Sign-On</button>
+    </form>
+  </div>
+  <?php endif; ?>
 
   <form method="post" style="margin-top:16px;">
     <h3>Resend verification email</h3>

@@ -19,17 +19,11 @@ while ($userToUpdateExchange = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $userId = $userToUpdateExchange['id'];
     echo "For user: " . $userToUpdateExchange['username'] . "<br />";
 
-    $query = "SELECT api_key, provider FROM fixer WHERE user_id = :userId";
-    $stmt = $pdo->prepare($query);
-    $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-    $stmt->execute();
-
-    // PDO conversion - removed result check
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($row) {
-            $apiKey = $row['api_key'];
-            $provider = $row['provider'];
+    // Get global Fixer key from admin
+    $row = $pdo->query('SELECT fixer_api_key, fixer_provider FROM admin ORDER BY id ASC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+        if ($row && !empty($row['fixer_api_key'])) {
+            $apiKey = $row['fixer_api_key'];
+            $provider = (int)$row['fixer_provider'];
 
             $codes = "";
             $query = "SELECT id, name, symbol, code FROM currencies WHERE user_id = :userId";

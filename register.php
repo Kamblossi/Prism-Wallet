@@ -1,12 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/connect.php';
 
-$auth_provider = $_ENV['AUTH_PROVIDER'] ?? getenv('AUTH_PROVIDER') ?? 'clerk';
-if ($auth_provider !== 'local') {
-  header('Location: /clerk-auth.php');
-  exit;
-}
-
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   $email = trim($_POST['email'] ?? '');
@@ -39,9 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $randomAvatar = $choices ? $choices[random_int(0, count($choices)-1)] : '0.svg';
 
-        $stmt = $pdo->prepare("INSERT INTO users (clerk_id, username, email, firstname, lastname, is_admin, avatar, language, budget, password_hash, is_verified, verification_token, token_expires_at) VALUES (:cid, :username, :email, :firstname, :lastname, FALSE, :avatar, 'en', 0, :ph, 0, :vt, :vx) RETURNING id");
+        $stmt = $pdo->prepare("INSERT INTO users (username, email, firstname, lastname, is_admin, avatar, language, budget, password_hash, is_verified, verification_token, token_expires_at) VALUES (:username, :email, :firstname, :lastname, FALSE, :avatar, 'en', 0, :ph, 0, :vt, :vx) RETURNING id");
         $stmt->execute([
-          'cid' => 'local-'.bin2hex(random_bytes(6)),
           'username' => ($firstname !== '' ? $firstname : explode('@',$email)[0]),
           'email' => $email,
           'firstname' => $firstname,

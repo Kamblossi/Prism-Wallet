@@ -16,13 +16,8 @@ require_once 'version.php';
 // Check if user is authenticated, but allow dev bypass when DISABLE_AUTH=1
 $__disableAuth = getenv('DISABLE_AUTH');
 $__devBypass = ($__disableAuth && (int)$__disableAuth === 1);
-if (!$__devBypass && !$session->isLoggedIn()) {
-  $provider = isset($auth_provider) ? $auth_provider : 'clerk';
-  if ($provider === 'local') {
-    header("Location: /login.php");
-  } else {
-    header("Location: /clerk-auth.php");
-  }
+if (!$__devBypass && (!$session || !$session->isLoggedIn())) {
+  header("Location: /login.php");
   exit();
 }
 
@@ -130,12 +125,20 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
   <link rel="stylesheet" href="styles/brands.css">
   <script type="text/javascript" src="scripts/all.js?<?= $version ?>"></script>
   <script type="text/javascript" src="scripts/common.js?<?= $version ?>"></script>
+  <?php
+    if (session_status() === PHP_SESSION_NONE) { @session_start(); }
+    if (empty($_SESSION['csrf_token'])) {
+      $_SESSION['csrf_token'] = bin2hex(random_bytes(16));
+    }
+    $csrfToken = $_SESSION['csrf_token'];
+  ?>
   <script type="text/javascript">
     window.theme = "<?= $theme ?>";
     window.update_theme_settings = "<?= $updateThemeSettings ?>";
     window.lang = "<?= $lang ?>";
     window.colorTheme = "<?= $colorTheme ?>";
     window.mobileNavigation = "<?= $settings['mobileNavigation'] == "true" ?>";
+    window.csrfToken = "<?= htmlspecialchars($csrfToken, ENT_QUOTES, 'UTF-8') ?>";
   </script>
   <style>
     <?= htmlspecialchars($customCss, ENT_QUOTES, 'UTF-8') ?>
@@ -211,10 +214,7 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
             <a href="profile.php">
               <?php include "images/siteicons/svg/mobile-menu/profile.php"; ?>
               <?= translate('profile', $i18n) ?></a>  
-            <a href="about.php">
-              <?php include "images/siteicons/svg/mobile-menu/about.php"; ?>
-              <?= translate('about', $i18n) ?>
-            </a>
+            <?php /* About page removed */ ?>
             <?php if ($isAdmin): ?>
               <a href="admin.php">
                 <?php include "images/siteicons/svg/mobile-menu/admin.php"; ?>

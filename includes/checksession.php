@@ -1,17 +1,16 @@
 <?php
-// Authentication middleware supporting Clerk or Local provider
-// Provider is selected via AUTH_PROVIDER env ('clerk' by default)
-// Local provider uses PHP sessions; Clerk uses JWT via Clerk API
+// Authentication middleware for Local provider only
+// Local provider uses PHP sessions
 
-// Development override: allow bypassing Clerk when DISABLE_AUTH=1
+// Development override: allow bypassing auth when DISABLE_AUTH=1
 $disableAuth = getenv('DISABLE_AUTH');
 if ($disableAuth && (int)$disableAuth === 1) {
-    // Ensure at least one user exists with a dummy clerk_id to satisfy NOT NULL constraint
+    // Ensure at least one user exists
     $count = (int)$pdo->query('SELECT COUNT(*) FROM users')->fetchColumn();
     if ($count === 0) {
         $pdo->beginTransaction();
         try {
-            $pdo->exec("INSERT INTO users (clerk_id, username, email, is_admin, avatar, language, budget) VALUES ('dev-user-1', 'dev', 'dev@example.com', TRUE, 'user.svg', 'en', 0)");
+            $pdo->exec("INSERT INTO users (username, email, is_admin, avatar, language, budget, is_verified) VALUES ('dev', 'dev@example.com', TRUE, 'images/avatars/0.svg', 'en', 0, 1)");
             $userIdNew = (int)$pdo->lastInsertId();
 
             // Create settings row with safe defaults
@@ -36,10 +35,7 @@ if ($disableAuth && (int)$disableAuth === 1) {
     $username = $userData['email'];
     $main_currency = $userData['main_currency'] ?? 'USD';
 } else {
-    // Choose behavior based on provider
-    $provider = $_ENV['AUTH_PROVIDER'] ?? getenv('AUTH_PROVIDER') ?? 'clerk';
-
-    if ($provider === 'local') {
+    // Local provider
         if (!$session->isLoggedIn()) {
             header('Location: /login.php');
             exit();
@@ -60,6 +56,21 @@ if ($disableAuth && (int)$disableAuth === 1) {
         }
         $username = $userData['username'] ?: $userData['email'];
         $main_currency = $userData['main_currency'] ?? 'USD';
+
+        // Enforce session_version for force-logout
+        if (session_status() === PHP_SESSION_NONE) { session_start(); }
+        $sessVer = isset($_SESSION['session_version']) ? (int)$_SESSION['session_version'] : 0;
+        try {
+            $stmt = $pdo->prepare('SELECT session_version FROM users WHERE id = :id');
+            $stmt->execute([':id'=>$userId]);
+            $dbVer = (int)$stmt->fetchColumn();
+            if ($sessVer !== $dbVer) {
+                session_unset();
+                session_destroy();
+                header('Location: /login.php');
+                exit();
+            }
+        } catch (Throwable $e) { /* ignore */ }
 
         // Ensure at least one default household entry exists
         try {
@@ -135,37 +146,6 @@ if ($disableAuth && (int)$disableAuth === 1) {
                 }
             }
         } catch (Throwable $e) { /* ignore */ }
-    } else {
-        // Clerk authentication
-        if (!$session->isLoggedIn()) {
-            header('Location: /clerk-auth.php');
-            exit();
-        }
-
-        // Get current Clerk user (identity from Clerk)
-        $clerkUser = $session->getClerkUser();
-        if (!$clerkUser) {
-            header('Location: /clerk-auth.php');
-            exit();
-        }
-
-        // Get user data from database using Clerk ID
-        $stmt = $pdo->prepare('SELECT * FROM users WHERE clerk_id = ?');
-        $stmt->execute([$clerkUser['id']]);
-        $userData = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if (!$userData) {
-            // User exists in Clerk but not in database - sync them
-            error_log('User exists in Clerk but not in database, redirecting to sync');
-            header('Location: /clerk-auth.php');
-            exit();
-        }
-
-        // Set variables for application use
-        $userId = $userData['id'];
-        $username = $userData['email']; // Use email as username
-        $main_currency = $userData['main_currency'] ?? 'USD';
-    }
 }
 
 // Set safe defaults for optional fields
@@ -187,5 +167,5 @@ if (!isset($userData['totp_enabled'])) {
     $userData['totp_enabled'] = 0;
 }
 
-// No more cookie or session handling - Clerk handles all authentication
+// No more cookie or session handling beyond local auth
 ?>

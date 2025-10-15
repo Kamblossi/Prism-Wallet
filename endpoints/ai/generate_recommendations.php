@@ -42,20 +42,9 @@ function describeCurrency($currencyId, $currencies)
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
 
-    // Get AI settings for the user from the database
-    $stmt = $pdo->prepare("SELECT * FROM ai_settings WHERE user_id = ?");
-    $stmt->bindValue(1, $userId, PDO::PARAM_INT);
-    $stmt->execute();
-    $aiSettings = $stmt->fetch(PDO::FETCH_ASSOC);
-    $stmt->close();
-    if (!$aiSettings) {
-        $response = [
-            "success" => false,
-            "message" => translate('error', $i18n)
-        ];
-        echo json_encode($response);
-        exit;
-    }
+    // Get AI settings from global admin configuration
+    $aiSettings = $pdo->query('SELECT ai_enabled AS enabled, ai_type AS type, ai_api_key AS api_key, ai_model AS model, ai_url AS url FROM admin ORDER BY id ASC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
+    if (!$aiSettings) { echo json_encode(["success"=>false, "message"=>translate('error',$i18n)]); exit; }
 
     $type = isset($aiSettings['type']) ? $aiSettings['type'] : '';
     $enabled = isset($aiSettings['enabled']) ? (bool) $aiSettings['enabled'] : false;

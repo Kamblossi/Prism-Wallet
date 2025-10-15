@@ -1,8 +1,12 @@
 <?php
 require_once '../../includes/connect_endpoint.php';
+require_once '../../includes/endpoint_helpers.php';
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     if ($_SERVER["REQUEST_METHOD"] === "POST") {
+        // Only admin can change AI settings now (global)
+        if (!current_user_is_admin($pdo)) { json_error(translate('error', $i18n) ?: 'Forbidden', 403, 'forbidden'); }
+        require_csrf();
         $input = file_get_contents('php://input');
         $data = json_decode($input, true);
 
@@ -54,21 +58,10 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             $aiOllamaHost = ''; // Clear Ollama host if not using Ollama
         }
 
-        // Remove existing AI settings for the user
-        $stmt = $pdo->prepare("DELETE FROM ai_settings WHERE user_id = ?");
-        $stmt->bindValue(1, $userId, PDO::PARAM_INT);
-        $stmt->execute();
-        $stmt->close();
-
-        // Insert new AI settings
-        $stmt = $pdo->prepare("INSERT INTO ai_settings (user_id, type, enabled, api_key, model, url) VALUES (:user_id, :type, :enabled, :api_key, :model, :url)");
-        $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
-        $stmt->bindValue(':type', $aiType, PDO::PARAM_STR);
-        $stmt->bindValue(':enabled', $aiEnabled, PDO::PARAM_INT);
-        $stmt->bindValue(':api_key', $aiApiKey, PDO::PARAM_STR);
-        $stmt->bindValue(':model', $aiModel, PDO::PARAM_STR);
-        $stmt->bindValue(':url', $aiOllamaHost, PDO::PARAM_STR);
-        $stmt->execute();
+        // Store globally in admin table
+        $stmt = $pdo->prepare('UPDATE admin SET ai_enabled = :en, ai_type = :t, ai_api_key = :k, ai_model = :m, ai_url = :u WHERE id = (SELECT id FROM admin ORDER BY id ASC LIMIT 1)');
+        $stmt->execute([':en'=>$aiEnabled?1:0, ':t'=>$aiType, ':k'=>$aiApiKey, ':m'=>$aiModel, ':u'=>$aiOllamaHost]);
+        audit_admin_action($pdo, 'ai.save_settings', null, ['type'=>$aiType, 'enabled'=>$aiEnabled?1:0]);
 
         // PDO conversion - removed result check
             $response = [

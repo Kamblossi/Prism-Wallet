@@ -65,16 +65,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         1 => "APILayer.com"
     ]; 
 
-    $query = "SELECT * FROM fixer WHERE user_id = :userId";
-    $stmt = $pdo->prepare($query);
-    $stmt->bindValue(':userId', $userId);
-    $stmt->execute();
+    // Use global admin Fixer settings
+    $stmt = $pdo->query('SELECT fixer_api_key AS api_key, fixer_provider AS provider FROM admin ORDER BY id ASC LIMIT 1');
     $fixer = $stmt->fetch(PDO::FETCH_ASSOC);
 
     $notes = [];
 
     if ($fixer) {
-        unset($fixer['user_id']);
         $fixer['provider_name'] = $providers[$fixer['provider']];
         if ($fixer['api_key']) {
             $fixer['api_key'] = "********";

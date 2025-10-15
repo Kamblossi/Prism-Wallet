@@ -20,10 +20,8 @@ function update_exchange_rate($db, $userId)
 {
     // Use global PDO
     global $pdo;
-    // Get API settings for this user
-    $stmt = $pdo->prepare('SELECT api_key, provider FROM fixer WHERE user_id = :uid');
-    $stmt->execute([':uid' => $userId]);
-    $fx = $stmt->fetch(PDO::FETCH_ASSOC);
+    // Get global Fixer settings from admin
+    $fx = $pdo->query('SELECT fixer_api_key AS api_key, fixer_provider AS provider FROM admin ORDER BY id ASC LIMIT 1')->fetch(PDO::FETCH_ASSOC);
     if (!$fx || empty($fx['api_key'])) { return; }
 
     // List currency codes for this user

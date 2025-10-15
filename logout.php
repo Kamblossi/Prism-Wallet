@@ -1,42 +1,36 @@
 <?php
 require_once __DIR__ . '/includes/connect.php';
+if (session_status() === PHP_SESSION_NONE) session_start();
 
-// Determine auth provider
-$auth_provider = $_ENV['AUTH_PROVIDER'] ?? getenv('AUTH_PROVIDER') ?? 'clerk';
-
-if ($auth_provider === 'local') {
-    if (session_status() === PHP_SESSION_NONE) session_start();
-    $_SESSION = [];
-    if (ini_get('session.use_cookies')) {
-        $params = session_get_cookie_params();
-        setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+// Read OIDC logout before clearing session
+$logoutUrl = null;
+try {
+    $row = $pdo->query('SELECT oidc_oauth_enabled, logout_url FROM oauth_settings WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
+    if ($row && (int)($row['oidc_oauth_enabled'] ?? 0) === 1) {
+        $logoutUrl = $row['logout_url'] ?? null;
     }
-    session_destroy();
-    foreach (['theme','inUseTheme','user_locale'] as $c) {
-        if (isset($_COOKIE[$c])) {
-            setcookie($c, '', [ 'expires' => time()-3600, 'path' => '/' ]);
-        }
-    }
-    header('Location: /login.php');
-    exit;
-}
+} catch (Throwable $e) { $logoutUrl = null; }
 
-// Clerk sign-out: clear session cookie and redirect to auth page
-if (isset($_COOKIE['__session'])) {
-    setcookie('__session', '', [
-        'expires' => time() - 3600,
-        'path' => '/',
-        'secure' => isset($_SERVER['HTTPS']),
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ]);
+$_SESSION = [];
+if (ini_get('session.use_cookies')) {
+    $params = session_get_cookie_params();
+    setcookie(session_name(), '', time() - 42000, $params['path'], $params['domain'], $params['secure'], $params['httponly']);
 }
-foreach (['theme','inUseTheme','user_locale'] as $c) {
+session_destroy();
+foreach (['theme','inUseTheme','user_locale','__session'] as $c) {
     if (isset($_COOKIE[$c])) {
         setcookie($c, '', [ 'expires' => time()-3600, 'path' => '/' ]);
     }
 }
-header('Location: /clerk-auth.php');
+
+if ($logoutUrl) {
+    $base = getenv('APP_URL') ?: ($_ENV['APP_URL'] ?? 'http://localhost:8081');
+    $redir = rtrim($base, '/') . '/login.php';
+    $glue = (strpos($logoutUrl, '?') === false) ? '?' : '&';
+    header('Location: ' . $logoutUrl . $glue . 'post_logout_redirect_uri=' . urlencode($redir));
+    exit;
+}
+
+header('Location: /login.php');
 exit;
 ?>
-

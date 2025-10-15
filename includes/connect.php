@@ -162,13 +162,8 @@ require_once __DIR__ . '/db_wrapper.php';
 
 $db = new Database($pdo);
 
-// Select authentication provider: 'clerk' (default) or 'local'
-$auth_provider = $_ENV['AUTH_PROVIDER'] ?? getenv('AUTH_PROVIDER') ?? 'local';
-
-if ($auth_provider === 'local') {
-    // Local session-based auth
-    require_once __DIR__ . '/local_session.php';
-    $session = new LocalSession($pdo);
-}
+// Use local session-based auth exclusively
+require_once __DIR__ . '/local_session.php';
+$session = new LocalSession($pdo);
 
 ?>

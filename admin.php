@@ -7,9 +7,27 @@ if ($isAdmin != 1) {
 }
 
 // get admin settings from admin table
-$stmt = $pdo->prepare('SELECT * FROM admin');
+$stmt = $pdo->prepare('SELECT * FROM admin ORDER BY id ASC LIMIT 1');
 $stmt->execute();
 $settings = $stmt->fetch(PDO::FETCH_ASSOC);
+if ($settings === false || !is_array($settings)) {
+    // Provide sane defaults if table is empty or fetch failed
+    $settings = [
+        'registrations_open' => 0,
+        'max_users' => 0,
+        'require_email_verification' => 0,
+        'server_url' => '',
+        'login_disabled' => 0,
+        'smtp_address' => '',
+        'smtp_port' => null,
+        'smtp_username' => '',
+        'smtp_password' => '',
+        'from_email' => '',
+        'encryption' => 'none',
+        'update_notification' => 0,
+        'latest_version' => null,
+    ];
+}
 
 // get OIDC settings
 $stmt = $pdo->prepare('SELECT * FROM oauth_settings WHERE id = 1');
@@ -59,7 +77,7 @@ if (!empty($users)) {
     }
 }
 
-$loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
+$loginDisabledAllowed = ($userCount == 1) && (int)($settings['registrations_open'] ?? 0) == 0;
 ?>
 
 <section class="contain settings">
@@ -70,12 +88,12 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
         </header>
         <div class="admin-form">
             <div class="form-group-inline">
-                <input type="checkbox" id="registrations" <?= $settings['registrations_open'] ? 'checked' : '' ?> />
+                <input type="checkbox" id="registrations" <?= !empty($settings['registrations_open']) ? 'checked' : '' ?> />
                 <label for="registrations"><?= translate('enable_user_registrations', $i18n) ?></label>
             </div>
             <div class="form-group">
                 <label for="maxUsers"><?= translate('maximum_number_users', $i18n) ?></label>
-                <input type="number" id="maxUsers" value="<?= $settings['max_users'] ?>" />
+                <input type="number" id="maxUsers" value="<?= htmlspecialchars((string)($settings['max_users'] ?? 0), ENT_QUOTES) ?>" />
             </div>
             <div class="settings-notes">
                 <p>
@@ -88,7 +106,7 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
                 </p>
             </div>
             <div class="form-group-inline">
-                <input type="checkbox" id="requireEmail" <?= $settings['require_email_verification'] ? 'checked' : '' ?>
+                <input type="checkbox" id="requireEmail" <?= !empty($settings['require_email_verification']) ? 'checked' : '' ?>
                     <?= empty($settings['smtp_address']) ? 'disabled' : '' ?> />
                 <label for="requireEmail">
                     <?= translate('require_email_verification', $i18n) ?>
@@ -108,7 +126,7 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
             ?>
             <div class="form-group">
                 <label for="serverUrl"><?= translate('server_url', $i18n) ?></label>
-                <input type="text" id="serverUrl" value="<?= $settings['server_url'] ?>" />
+                <input type="text" id="serverUrl" value="<?= htmlspecialchars((string)($settings['server_url'] ?? ''), ENT_QUOTES) ?>" />
             </div>
             <div class="settings-notes">
                 <p>
@@ -122,7 +140,7 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
             </div>
             <hr>
             <div class="form-group-inline">
-                <input type="checkbox" id="disableLogin" <?= $settings['login_disabled'] ? 'checked' : '' ?>
+                <input type="checkbox" id="disableLogin" <?= !empty($settings['login_disabled']) ? 'checked' : '' ?>
                     <?= $loginDisabledAllowed ? '' : 'disabled' ?> />
                 <label for="disableLogin"><?= translate('disable_login', $i18n) ?></label>
             </div>
@@ -243,32 +261,32 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
         </header>
         <div class="admin-form">
             <div class="form-group-inline">
-                <input type="checkbox" id="oidcEnabled" <?= $settings['oidc_oauth_enabled'] ? 'checked' : '' ?>
+                <input type="checkbox" id="oidcEnabled" <?= !empty($oidcSettings['oidc_oauth_enabled']) ? 'checked' : '' ?>
                     onchange="toggleOidcEnabled()" />
                 <label for="oidcEnabled"><?= translate('oidc_oauth_enabled', $i18n) ?></label>
             </div>
             <div class="form-group">
-                <input type="text" id="oidcName" placeholder="Provider Name" value="<?= $oidcSettings['name'] ?>" />
+                <input type="text" id="oidcName" placeholder="Provider Name" value="<?= htmlspecialchars((string)($oidcSettings['name'] ?? ''), ENT_QUOTES) ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcClientId" placeholder="Client ID" value="<?= $oidcSettings['client_id'] ?>" />
+                <input type="text" id="oidcClientId" placeholder="Client ID" value="<?= htmlspecialchars((string)($oidcSettings['client_id'] ?? ''), ENT_QUOTES) ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcClientSecret" placeholder="Client Secret" value="<?= $oidcSettings['client_secret'] ?>" />
+                <input type="text" id="oidcClientSecret" placeholder="Client Secret" value="<?= htmlspecialchars((string)($oidcSettings['client_secret'] ?? ''), ENT_QUOTES) ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcAuthUrl" placeholder="Auth URL" value="<?= $oidcSettings['authorization_url'] ?>" />
+                <input type="text" id="oidcAuthUrl" placeholder="Auth URL" value="<?= htmlspecialchars((string)($oidcSettings['authorization_url'] ?? ''), ENT_QUOTES) ?>" />
             </div>
             <div class="form-group">
-                <input type="text" id="oidcTokenUrl" placeholder="Token URL" value="<?= $oidcSettings['token_url'] ?>" />
+                <input type="text" id="oidcTokenUrl" placeholder="Token URL" value="<?= htmlspecialchars((string)($oidcSettings['token_url'] ?? ''), ENT_QUOTES) ?>" />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcUserInfoUrl" placeholder="User Info URL"
-                    value="<?= $oidcSettings['user_info_url'] ?>" />
+                    value="<?= htmlspecialchars((string)($oidcSettings['user_info_url'] ?? ''), ENT_QUOTES) ?>" />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcRedirectUrl" placeholder="Redirect URL"
-                    value="<?= $oidcSettings['redirect_url'] ?>" />
+                    value="<?= htmlspecialchars((string)($oidcSettings['redirect_url'] ?? ''), ENT_QUOTES) ?>" />
             </div>
             <div class="form-group">
                 <input type="text" id="oidcLogoutUrl" placeholder="Logout URL"
@@ -525,8 +543,77 @@ $loginDisabledAllowed = $userCount == 1 && $settings['registrations_open'] == 0;
         </div>
     </section>
 
+    <section class="account-section">
+        <header>
+            <h2>Fixer API</h2>
+        </header>
+        <div class="account-fixer">
+            <div class="form-group">
+                <input type="text" id="adminFixerKey" placeholder="<?= translate('api_key', $i18n) ?>" value="<?= htmlspecialchars((string)($settings['fixer_api_key'] ?? ''), ENT_QUOTES) ?>">
+            </div>
+            <div class="form-group">
+                <label for="adminFixerProvider"><?= translate('provider', $i18n) ?>:</label>
+                <?php $fixProv = (int)($settings['fixer_provider'] ?? 0); ?>
+                <select id="adminFixerProvider">
+                    <option value="0" <?= $fixProv === 0 ? 'selected' : '' ?>>fixer.io</option>
+                    <option value="1" <?= $fixProv === 1 ? 'selected' : '' ?>>apilayer.com</option>
+                </select>
+            </div>
+            <div class="buttons">
+                <input type="submit" class="thin mobile-grow" value="<?= translate('save', $i18n) ?>" id="saveAdminFixer" onClick="saveAdminFixerSettings()" />
+            </div>
+        </div>
+    </section>
+
+    <section class="account-section">
+        <header>
+            <h2><?= translate('ai_recommendations', $i18n) ?></h2>
+        </header>
+        <div class="account-ai-settings">
+            <div class="form-group-inline">
+                <input type="checkbox" id="admin_ai_enabled" <?= !empty($settings['ai_enabled']) ? 'checked' : '' ?>>
+                <label for="admin_ai_enabled" class="capitalize"><?= translate('enabled', $i18n) ?></label>
+            </div>
+            <?php $aiType = $settings['ai_type'] ?? 'chatgpt'; ?>
+            <div class="form-group">
+                <label for="admin_ai_type"><?= translate('provider', $i18n) ?>:</label>
+                <select id="admin_ai_type">
+                    <option value="chatgpt" <?= $aiType==='chatgpt'?'selected':'' ?>>ChatGPT</option>
+                    <option value="gemini" <?= $aiType==='gemini'?'selected':'' ?>>Gemini</option>
+                    <option value="ollama" <?= $aiType==='ollama'?'selected':'' ?>>Local Ollama</option>
+                </select>
+            </div>
+            <div class="form-group-inline">
+                <input type="text" id="admin_ai_api_key" placeholder="<?= translate('api_key', $i18n) ?>" value="<?= htmlspecialchars((string)($settings['ai_api_key'] ?? ''), ENT_QUOTES) ?>" class="<?= ($aiType==='ollama') ? 'hidden' : '' ?>">
+                <input type="text" id="admin_ai_url" placeholder="http://localhost:11434" value="<?= htmlspecialchars((string)($settings['ai_url'] ?? ''), ENT_QUOTES) ?>" class="<?= ($aiType==='ollama') ? '' : 'hidden' ?>">
+            </div>
+            <div class="form-group">
+                <input type="text" id="admin_ai_model" placeholder="gpt-4o-mini / gemini-1.5-pro / llama3" value="<?= htmlspecialchars((string)($settings['ai_model'] ?? ''), ENT_QUOTES) ?>">
+            </div>
+            <div class="buttons">
+                <input type="submit" class="thin mobile-grow" value="<?= translate('save', $i18n) ?>" id="saveAdminAI" onClick="saveAdminAISettings()" />
+            </div>
+        </div>
+    </section>
+
+    <section class="account-section">
+        <header>
+            <h2><?= translate('health', $i18n) ?></h2>
+        </header>
+        <div id="health-status" class="form-group">
+            <em>Loading health status…</em>
+        </div>
+        <div class="form-group">
+            <button class="button tiny" id="refreshHealth">Refresh</button>
+            <button class="button tiny" id="viewLogs">View Logs</button>
+        </div>
+        <pre id="logsView" style="max-height:260px;overflow:auto;display:none"></pre>
+    </section>
+
 </section>
 <script src="scripts/admin.js?<?= $version ?>"></script>
+<script src="scripts/admin_users.js?<?= $version ?>"></script>
+<script src="scripts/admin_health.js?<?= $version ?>"></script>
 
 <?php
 require_once 'includes/footer.php';

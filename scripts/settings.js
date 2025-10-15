@@ -744,31 +744,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-function addFixerKeyButton() {
-  document.getElementById("addFixerKey").disabled = true;
-  const apiKeyInput = document.querySelector("#fixerKey");
-  apiKey = apiKeyInput.value.trim();
-  const provider = document.querySelector("#fixerProvider").value;
-  const convertCurrencyCheckbox = document.querySelector("#convertcurrency");
-  fetch("endpoints/currency/fixer_api_key.php", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: `api_key=${encodeURIComponent(apiKey)}&provider=${encodeURIComponent(provider)}`,
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        showSuccessMessage(data.message);
-        document.getElementById("addFixerKey").disabled = false;
-        convertCurrencyCheckbox.disabled = false;
-        // update currency exchange rates
-        fetch("endpoints/currency/update_exchange.php?force=true");
-      } else {
-        showErrorMessage(data.message);
-        document.getElementById("addFixerKey").disabled = false;
-      }
     })
     .catch(error => {
       showErrorMessage(error);
@@ -935,30 +910,6 @@ function toggleAiInputs() {
   }
 }
 
-function saveAiSettingsButton() {
-  const aiEnabled = document.querySelector("#ai_enabled").checked;
-  const aiType = document.querySelector("#ai_type").value;
-  const aiApiKey = document.querySelector("#ai_api_key").value.trim();
-  const aiOllamaHost = document.querySelector("#ai_ollama_host").value.trim();
-  const aiModel = document.querySelector("#ai_model").value;
-
-  fetch('endpoints/ai/save_settings.php', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ ai_enabled: aiEnabled, ai_type: aiType, api_key: aiApiKey, ollama_host: aiOllamaHost, model: aiModel })
-  })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        showSuccessMessage(data.message);
-        const runAiActionButton = document.querySelector("#runAiRecommendations");
-        if (data.enabled) {
-          runAiActionButton.classList.remove("hidden");
-        } else {
-          runAiActionButton.classList.add("hidden");
-        }
       } else {
         showErrorMessage(data.errorMessage);
       }
@@ -999,3 +950,4 @@ function runAiRecommendations() {
     });
 
 }
+
