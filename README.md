@@ -202,7 +202,30 @@ If you want to trigger an Update of the exchange rates, change your main currenc
 
 ## OIDC
 
-OIDC can be enabled on the Admin page and can be used with providers that support OAuth.
+You can enable OIDC in Admin → OIDC. Prism Wallet supports Auth0 as an identity provider while preserving existing local users (including your admin account).
+
+Quick setup with Auth0:
+
+- Install dependencies: `composer install`
+- Run migrations: open `endpoints/db/migrate.php` in a browser or run `php endpoints/db/migrate.php`.
+- In Auth0, create a Regular Web Application and set:
+  - Allowed Callback URLs: `https://YOUR_APP/endpoints/oidc/callback.php`
+  - Allowed Logout URLs: `https://YOUR_APP/login.php`
+  - Allowed Web Origins: `https://YOUR_APP`
+- In Admin → OIDC fill:
+  - Authorization URL: `https://YOUR_DOMAIN/authorize`
+  - Token URL: `https://YOUR_DOMAIN/oauth/token`
+  - User Info URL: `https://YOUR_DOMAIN/userinfo`
+  - Logout URL: `https://YOUR_DOMAIN/v2/logout`
+  - Redirect URL: `https://YOUR_APP/endpoints/oidc/callback.php`
+  - Scopes: `openid email profile`
+- Toggle “Enable OIDC / SSO”. If you get an error, make sure migrations ran and you’re making the change from an authenticated admin session (CSRF token required).
+
+Behavior:
+
+- Users authenticate with Auth0, then Prism Wallet maps them to the local `users` table by email.
+- If “Create user automatically” is enabled, a new local user is created on first login; otherwise, access is refused until a local user is created by an admin.
+- Existing users, including your admin, are never removed.
 
 ## API Documentation
 

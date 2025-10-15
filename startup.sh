@@ -63,6 +63,16 @@ shutdown_once() {
 # Handle all common stop signals
 trap 'shutdown_once' SIGTERM SIGINT SIGQUIT
 
+# Ensure PHP dependencies are installed if Composer is available
+if [ ! -f "/var/www/html/vendor/autoload.php" ]; then
+  if command -v composer >/dev/null 2>&1; then
+    echo "Installing PHP dependencies with Composer..." | tee -a /var/log/startup.log
+    (cd /var/www/html && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --prefer-dist --no-interaction) || true
+  else
+    echo "Composer not found; skipping vendor install. Ensure vendor/ is baked into the image." | tee -a /var/log/startup.log
+  fi
+fi
+
 # Start both PHP-FPM and Nginx
 echo "Launching php-fpm"
 php-fpm -F &
