@@ -66,7 +66,7 @@ $user = $stmt->fetch(PDO::FETCH_ASSOC);
 $first_name = $user['firstname'] ?? $user['username'] ?? '';
 
 // Fetch the next 3 enabled subscriptions up for payment
-$stmt = $pdo->prepare("SELECT id, logo, name, price, currency_id, next_payment, inactive FROM subscriptions WHERE user_id = :userId AND next_payment >= CURRENT_DATE AND inactive = 0 ORDER BY next_payment ASC LIMIT 3");
+$stmt = $pdo->prepare("SELECT id, logo, name, price, currency_id, next_payment, inactive FROM subscriptions WHERE user_id = :userId AND next_payment >= CURRENT_DATE AND inactive = FALSE ORDER BY next_payment ASC LIMIT 3");
 $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
 $stmt->execute();
 $upcomingSubscriptions = [];
@@ -75,7 +75,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 }
 
 // Fetch enabled subscriptions with manual renewal that are overdue
-$stmt = $pdo->prepare("SELECT id, logo, name, price, currency_id, next_payment, inactive, auto_renew FROM subscriptions WHERE user_id = :userId AND next_payment < CURRENT_DATE AND auto_renew = 0 AND inactive = 0 ORDER BY next_payment ASC");
+$stmt = $pdo->prepare("SELECT id, logo, name, price, currency_id, next_payment, inactive, auto_renew FROM subscriptions WHERE user_id = :userId AND next_payment < CURRENT_DATE AND auto_renew = FALSE AND inactive = FALSE ORDER BY next_payment ASC");
 $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
 $stmt->execute();
 $overdueSubscriptions = [];
@@ -116,7 +116,6 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                         $subscriptionPrice = $subscription['price'];
                         $subscriptionCurrency = $subscription['currency_id'];
                         $subscriptionNextPayment = $subscription['next_payment'];
-                        $subscriptionDisplayNextPayment = date('F j', strtotime($subscriptionNextPayment));
                         $subscriptionDisplayPrice = formatPrice($subscriptionPrice, $currencies[$subscriptionCurrency]['code'], $currencies);
 
                         ?>
@@ -134,7 +133,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
                             }
                             ?>
                             <div class="subscription-item-info">
-                                <p class="subscription-item-date"> <?= formatDate($subscriptionDisplayNextPayment, $lang) ?>
+                                <p class="subscription-item-date"> <?= formatDate($subscriptionNextPayment, $lang) ?>
                                 </p>
                                 <p class="subscription-item-price"> <?= $subscriptionDisplayPrice ?></p>
                             </div>

@@ -16,9 +16,8 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         $checkStmt = $pdo->prepare($checkQuery);
         $checkStmt->bindParam(':currencyId', $currencyId, PDO::PARAM_INT);
         $checkStmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-        $checkResult = $checkStmt->execute();
-        $row = $checkResult->fetchArray();
-        $count = $row[0];
+        $checkStmt->execute();
+        $count = (int)$checkStmt->fetchColumn();
 
         if ($count > 0) {
             $response = [
@@ -40,15 +39,10 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
                 $stmt = $pdo->prepare($sql);
                 $stmt->bindParam(':currencyId', $currencyId, PDO::PARAM_INT);
                 $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-                $stmt->execute();
-                // PDO conversion - removed result check
+                if ($stmt->execute()) {
                     echo json_encode(["success" => true, "message" => translate('currency_removed', $i18n)]);
                 } else {
-                    $response = [
-                        "success" => false,
-                        "message" => translate('failed_to_remove_currency', $i18n)
-                    ];
-                    echo json_encode($response);
+                    echo json_encode(["success" => false, "message" => translate('failed_to_remove_currency', $i18n)]);
                 }
             }
         }

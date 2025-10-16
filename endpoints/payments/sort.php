@@ -7,7 +7,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $order = 1;
 
     foreach ($paymentMethods as $paymentMethodId) {
-        $sql = "UPDATE payment_methods SET `order` = :order WHERE id = :paymentMethodId and user_id = :userId";
+        $sql = "UPDATE payment_methods SET \"order\" = :order WHERE id = :paymentMethodId AND user_id = :userId";
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':order', $order, PDO::PARAM_INT);
         $stmt->bindParam(':paymentMethodId', $paymentMethodId, PDO::PARAM_INT);

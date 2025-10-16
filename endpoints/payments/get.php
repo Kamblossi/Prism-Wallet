@@ -3,29 +3,21 @@
 require_once '../../includes/connect_endpoint.php';
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
-    $paymentsInUseQuery = $pdo->prepare('SELECT id FROM payment_methods WHERE id IN (SELECT DISTINCT payment_method_id FROM subscriptions) AND user_id = :userId');
+    // Collect IDs of payment methods that are in use by this user
+    $paymentsInUseQuery = $pdo->prepare('SELECT DISTINCT payment_method_id FROM subscriptions WHERE user_id = :userId');
     $paymentsInUseQuery->bindParam(':userId', $userId, PDO::PARAM_INT);
-    $result = $paymentsInUseQuery->execute();
+    $paymentsInUseQuery->execute();
+    $paymentsInUse = $paymentsInUseQuery->fetchAll(PDO::FETCH_COLUMN, 0);
 
-    $paymentsInUse = [];
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $paymentsInUse[] = $row['id'];
-    }
-
-    $sql = "SELECT * FROM payment_methods WHERE user_id = :userId";
+    // List payment methods for this user
+    $sql = 'SELECT * FROM payment_methods WHERE user_id = :userId ORDER BY "order" ASC';
     $stmt = $pdo->prepare($sql);
     $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
     $stmt->execute();
 
-    // PDO conversion - removed result check
-        $payments = array();
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $payments[] = $row;
-        }
-    } else {
-        http_response_code(500);
-        echo json_encode(array("message" => translate('error', $i18n)));
-        exit();
+    $payments = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $payments[] = $row;
     }
 
     foreach ($payments as $payment) {

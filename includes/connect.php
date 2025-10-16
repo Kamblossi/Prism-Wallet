@@ -153,6 +153,18 @@ try {
     } catch (Throwable $e) {
         error_log('[schema_guard] cycles seed failed: ' . $e->getMessage());
     }
+
+    // Ensure historical totals table exists (used by dashboard graphs)
+    $pdo->exec("
+        CREATE TABLE IF NOT EXISTS total_yearly_cost (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            date DATE NOT NULL,
+            cost NUMERIC(14,2) NOT NULL DEFAULT 0,
+            currency BIGINT REFERENCES currencies(id) ON DELETE SET NULL
+        )
+    ");
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_total_yearly_cost_user_date ON total_yearly_cost (user_id, date)"); } catch (Throwable $e) { }
 } catch (Throwable $e) {
     // Non-fatal: log and continue; explicit migrations endpoint remains available for full setup
     error_log('[schema_guard] Warning while ensuring schema: ' . $e->getMessage());

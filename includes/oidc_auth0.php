@@ -119,5 +119,4 @@ function prism_auth0_login_local(PDO $pdo, array $profile): ?int {
     return $uid;
 }
 
-?>
-
+// Intentionally no closing PHP tag to avoid accidental output before headers

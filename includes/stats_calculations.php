@@ -51,7 +51,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
 
 // Get payment methods
 $paymentMethods = array();
-$query = "SELECT * FROM payment_methods WHERE user_id = :userId AND enabled = 1";
+$query = "SELECT * FROM payment_methods WHERE user_id = :userId AND enabled = TRUE";
 $stmt = $pdo->prepare($query);
 $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
 $stmt->execute();
@@ -151,12 +151,14 @@ $usesMultipleCurrencies = false;
             $categories[$categoryId]['count'] += 1;
             $paymentMethodId = $subscription['payment_method_id'];
             $paymentMethods[$paymentMethodId]['count'] += 1;
-            $inactive = $subscription['inactive'];
+            // Normalize Postgres boolean to real bool
+            $inactiveRaw = $subscription['inactive'];
+            $inactive = ($inactiveRaw === true) || ($inactiveRaw === 1) || ($inactiveRaw === '1') || ($inactiveRaw === 't') || ($inactiveRaw === 'true');
             $replacementSubscriptionId = $subscription['replacement_subscription_id'];
             $originalSubscriptionPrice = getPriceConverted($price, $currency, $db, $userId);
             $price = getPricePerMonth($cycle, $frequency, $originalSubscriptionPrice);
 
-            if ($inactive == 0) {
+            if (!$inactive) {
                 $activeSubscriptions++;
                 $totalCostPerMonth += $price;
                 $memberCost[$payerId]['cost'] += $price;
@@ -227,8 +229,6 @@ $usesMultipleCurrencies = false;
         $totalCostPerYear = 0;
         $averageSubscriptionCost = 0;
     }
-}
-
 $showVsBudgetGraph = false;
 $vsBudgetDataPoints = [];
 if (isset($userData['budget']) && $userData['budget'] > 0) {
@@ -261,19 +261,23 @@ if ($usesMultipleCurrencies) {
     } catch (Throwable $e) { $showCantConverErrorMessage = true; }
 }
 
-$query = "SELECT * FROM total_yearly_cost WHERE user_id = :userId";
-$stmt = $pdo->prepare($query);
-$stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
-$stmt->execute();
-
+// Load historical totals if the table exists; otherwise, skip gracefully
 $totalMonthlyCostDataPoints = [];
-while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-    $totalMonthlyCostDataPoints[] = [
-        "label" => html_entity_decode($row['date']),
-        "y" => round($row['cost'] / 12, 2),
-    ];
+try {
+    $query = "SELECT * FROM total_yearly_cost WHERE user_id = :userId ORDER BY date ASC";
+    $stmt = $pdo->prepare($query);
+    $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+    $stmt->execute();
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $totalMonthlyCostDataPoints[] = [
+            "label" => html_entity_decode($row['date']),
+            "y" => round(((float)$row['cost']) / 12, 2),
+        ];
+    }
+} catch (Throwable $e) {
+    // Table may not yet exist; migrations/cron will populate it later
 }
 
-$showTotalMonthlyCostGraph = count($totalMonthlyCostDataPoints) > 1;
+$showTotalMonthlyCostGraph = count($totalMonthlyCostDataPoints) >= 1;
 
 ?>

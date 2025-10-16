@@ -1,5 +1,4 @@
 <?php
-<?php
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/inputvalidation.php';
 

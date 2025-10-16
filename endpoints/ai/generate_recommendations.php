@@ -121,7 +121,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $userLanguageName = $languages[$userLanguage]['name'] ?? 'English';
 
     // Get subscriptions from the database for user with ID 1
-    $stmt = $pdo->prepare("SELECT * FROM subscriptions WHERE user_id = :user_id AND inactive = 0");
+    $stmt = $pdo->prepare("SELECT * FROM subscriptions WHERE user_id = :user_id AND inactive = FALSE");
     $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
     $stmt->execute();
 

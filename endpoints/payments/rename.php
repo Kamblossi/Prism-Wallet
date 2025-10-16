@@ -24,18 +24,19 @@ $stmt = $pdo->prepare($sql);
 $stmt->bindParam(':name', $name, PDO::PARAM_STR);
 $stmt->bindParam(':paymentId', $paymentId, PDO::PARAM_INT);
 $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-$stmt->execute();
-
-// PDO conversion - removed result check
+$ok = $stmt->execute();
+if ($ok) {
     echo json_encode([
-        "success" => true,
-        "message" => translate('payment_renamed', $i18n)
+        'success' => true,
+        'message' => translate('payment_renamed', $i18n)
     ]);
-} else {
-    echo json_encode([
-        "success" => false,
-        "message" => translate('payment_not_renamed', $i18n)
-    ]);
+    exit;
 }
+
+http_response_code(500);
+echo json_encode([
+    'success' => false,
+    'message' => translate('payment_not_renamed', $i18n)
+]);
 
 ?>

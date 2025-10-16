@@ -1,15 +1,19 @@
 <?php
-error_reporting(E_ERROR | E_PARSE);
 require_once '../../includes/connect_endpoint.php';
 require_once '../../includes/inputvalidation.php';
 require_once '../../includes/getsettings.php';
+require_once '../../includes/endpoint_helpers.php';
 
-if (!file_exists('../../images/uploads/logos')) {
-    mkdir('../../images/uploads/logos', 0777, true);
-    mkdir('../../images/uploads/logos/avatars', 0777, true);
+$logosDir = __DIR__ . '/../../images/uploads/logos';
+if (!is_dir($logosDir)) {
+    mkdir($logosDir, 0777, true);
+}
+$avatarsDir = $logosDir . '/avatars';
+if (!is_dir($avatarsDir)) {
+    mkdir($avatarsDir, 0777, true);
 }
 
-function sanitizeFilename($filename)
+function sanitizeFilename(string $filename): string
 {
     $filename = preg_replace("/[^a-zA-Z0-9\s]/", "", $filename);
     $filename = str_replace(" ", "-", $filename);
@@ -17,249 +21,245 @@ function sanitizeFilename($filename)
     return $filename;
 }
 
-function validateFileExtension($fileExtension)
+function validateFileExtension(string $fileExtension): bool
 {
     $allowedExtensions = ['png', 'jpg', 'jpeg', 'gif', 'jtif', 'webp'];
-    return in_array($fileExtension, $allowedExtensions);
+    return in_array(strtolower($fileExtension), $allowedExtensions, true);
 }
 
-function getLogoFromUrl($url, $uploadDir, $name, $i18n, $settings)
+function ensureImageString(string $data, string $errorMessage)
 {
-    if (!filter_var($url, FILTER_VALIDATE_URL) || !preg_match('/^https?:\/\//i', $url)) {
-        $response = [
-            "success" => false,
-            "errorMessage" => "Invalid URL format."
-        ];
-        echo json_encode($response);
-        exit();
+    $resource = @imagecreatefromstring($data);
+    if ($resource === false) {
+        json_error($errorMessage, 422);
     }
-
-    $host = parse_url($url, PHP_URL_HOST);
-    $ip = gethostbyname($host);
-    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
-        $response = [
-            "success" => false,
-            "errorMessage" => "Invalid IP Address."
-        ];
-        echo json_encode($response);
-        exit();
-    }
-
-    $ch = curl_init($url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
-    curl_setopt($ch, CURLOPT_MAXREDIRS, 3);
-
-    $imageData = curl_exec($ch);
-
-    if ($imageData !== false) {
-        $timestamp = time();
-        $fileName = $timestamp . '-payments-' . sanitizeFilename($name) . '.png';
-        $uploadDir = '../../images/uploads/logos/';
-        $uploadFile = $uploadDir . $fileName;
-
-        if (saveLogo($imageData, $uploadFile, $name, $settings)) {
-            curl_close($ch);
-            return $fileName;
-        } else {
-            curl_close($ch);
-            echo translate('error_fetching_image', $i18n) . ": " . curl_error($ch);
-            return "";
-        }
-    } else {
-        echo translate('error_fetching_image', $i18n) . ": " . curl_error($ch);
-        return "";
-    }
+    return $resource;
 }
 
-
-function saveLogo($imageData, $uploadFile, $name, $settings)
+function saveLogo(string $imageData, string $uploadFile, array $settings, string $errorMessage): string
 {
-    $image = imagecreatefromstring($imageData);
+    $image = ensureImageString($imageData, $errorMessage);
     $removeBackground = isset($settings['removeBackground']) && $settings['removeBackground'] === 'true';
-    if ($image !== false) {
-        $tempFile = tempnam(sys_get_temp_dir(), 'logo');
-        imagepng($image, $tempFile);
-        imagedestroy($image);
 
+    $tempFile = tempnam(sys_get_temp_dir(), 'logo');
+    imagepng($image, $tempFile);
+    imagedestroy($image);
+
+    try {
         if (extension_loaded('imagick')) {
             $imagick = new Imagick($tempFile);
             if ($removeBackground) {
-                $fuzz = Imagick::getQuantum() * 0.1; // 10%
+                $fuzz = Imagick::getQuantum() * 0.1;
                 $imagick->transparentPaintImage("rgb(247, 247, 247)", 0, $fuzz, false);
             }
             $imagick->setImageFormat('png');
             $imagick->writeImage($uploadFile);
-
             $imagick->clear();
             $imagick->destroy();
         } else {
-            // Alternative method if Imagick is not available
             $newImage = imagecreatefrompng($tempFile);
             if ($removeBackground) {
                 imagealphablending($newImage, false);
                 imagesavealpha($newImage, true);
                 $transparent = imagecolorallocatealpha($newImage, 0, 0, 0, 127);
-                imagefill($newImage, 0, 0, $transparent);  // Fill the entire image with transparency
-                imagepng($newImage, $uploadFile);
-                imagedestroy($newImage);
+                imagefill($newImage, 0, 0, $transparent);
             }
             imagepng($newImage, $uploadFile);
             imagedestroy($newImage);
         }
+    } catch (Throwable $e) {
         unlink($tempFile);
-
-        return true;
-    } else {
-        return false;
+        json_error($errorMessage, 500);
     }
+
+    unlink($tempFile);
+    return basename($uploadFile);
 }
 
-function resizeAndUploadLogo($uploadedFile, $uploadDir, $name)
+function resizeAndUploadLogo(array $uploadedFile, string $uploadDir, string $name, string $errorMessage): string
 {
+    if (!is_uploaded_file($uploadedFile['tmp_name'])) {
+        json_error($errorMessage, 400);
+    }
+
     $targetWidth = 70;
     $targetHeight = 48;
 
     $timestamp = time();
     $originalFileName = $uploadedFile['name'];
     $fileExtension = pathinfo($originalFileName, PATHINFO_EXTENSION);
-    $fileExtension = validateFileExtension($fileExtension) ? $fileExtension : 'png';
+    $fileExtension = validateFileExtension($fileExtension) ? strtolower($fileExtension) : 'png';
     $fileName = $timestamp . '-payments-' . sanitizeFilename($name) . '.' . $fileExtension;
-    $uploadFile = $uploadDir . $fileName;
+    $uploadFile = rtrim($uploadDir, '/\\') . '/' . $fileName;
 
-    if (move_uploaded_file($uploadedFile['tmp_name'], $uploadFile)) {
-        $fileInfo = getimagesize($uploadFile);
-
-        if ($fileInfo !== false) {
-            $width = $fileInfo[0];
-            $height = $fileInfo[1];
-
-            // Load the image based on its format
-            if ($fileExtension === 'png') {
-                $image = imagecreatefrompng($uploadFile);
-            } elseif ($fileExtension === 'jpg' || $fileExtension === 'jpeg') {
-                $image = imagecreatefromjpeg($uploadFile);
-            } elseif ($fileExtension === 'gif') {
-                $image = imagecreatefromgif($uploadFile);
-            } elseif ($fileExtension === 'webp') {
-                $image = imagecreatefromwebp($uploadFile);
-            } else {
-                // Handle other image formats as needed
-                return "";
-            }
-
-            // Enable alpha channel (transparency) for PNG images
-            if ($fileExtension === 'png') {
-                imagesavealpha($image, true);
-            }
-
-            $newWidth = $width;
-            $newHeight = $height;
-
-            if ($width > $targetWidth) {
-                $newWidth = (int) $targetWidth;
-                $newHeight = (int) (($targetWidth / $width) * $height);
-            }
-
-            if ($newHeight > $targetHeight) {
-                $newWidth = (int) (($targetHeight / $newHeight) * $newWidth);
-                $newHeight = (int) $targetHeight;
-            }
-
-            $resizedImage = imagecreatetruecolor($newWidth, $newHeight);
-            imagesavealpha($resizedImage, true);
-            $transparency = imagecolorallocatealpha($resizedImage, 0, 0, 0, 127);
-            imagefill($resizedImage, 0, 0, $transparency);
-            imagecopyresampled($resizedImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
-
-            if ($fileExtension === 'png') {
-                imagepng($resizedImage, $uploadFile);
-            } elseif ($fileExtension === 'jpg' || $fileExtension === 'jpeg') {
-                imagejpeg($resizedImage, $uploadFile);
-            } elseif ($fileExtension === 'gif') {
-                imagegif($resizedImage, $uploadFile);
-            } elseif ($fileExtension === 'webp') {
-                imagewebp($resizedImage, $uploadFile);
-            } else {
-                return "";
-            }
-
-            imagedestroy($image);
-            imagedestroy($resizedImage);
-            return $fileName;
-        }
+    if (!move_uploaded_file($uploadedFile['tmp_name'], $uploadFile)) {
+        json_error($errorMessage, 500);
     }
 
-    return "";
-}
-
-if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
-    if ($_SERVER["REQUEST_METHOD"] === "POST") {
-        $enabled = 1;
-        $name = validate($_POST["paymentname"]);
-        $iconUrl = validate($_POST['icon-url']);
-
-        if ($name === "" || ($iconUrl === "" && empty($_FILES['paymenticon']['name']))) {
-            $response = [
-                "success" => false,
-                "errorMessage" => translate('fill_all_fields', $i18n)
-            ];
-            echo json_encode($response);
-            exit();
-        }
-
-
-        $icon = "";
-
-        if ($iconUrl !== "") {
-            $icon = getLogoFromUrl($iconUrl, '../../images/uploads/logos/', $name, $i18n, $settings);
-        } else {
-            if (!empty($_FILES['paymenticon']['name'])) {
-                $fileType = mime_content_type($_FILES['paymenticon']['tmp_name']);
-                if (strpos($fileType, 'image') === false) {
-                    $response = [
-                        "success" => false,
-                        "errorMessage" => translate('fill_all_fields', $i18n)
-                    ];
-                    echo json_encode($response);
-                    exit();
-                }
-                $icon = resizeAndUploadLogo($_FILES['paymenticon'], '../../images/uploads/logos/', $name);
-            }
-        }
-
-        // Get the maximum existing ID
-        $stmt = $pdo->prepare("SELECT MAX(id) as maxID FROM payment_methods");
-        $stmt->execute();
-        $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        $maxID = $row['maxID'];
-
-        // Ensure the new ID is greater than 31
-        $newID = max($maxID + 1, 32);
-
-        // Insert the new record with the new ID
-        $sql = "INSERT INTO payment_methods (id, name, icon, enabled, user_id) VALUES (:id, :name, :icon, :enabled, :userId)";
-        $stmt = $pdo->prepare($sql);
-
-        $stmt->bindParam(':id', $newID, PDO::PARAM_INT);
-        $stmt->bindParam(':name', $name, PDO::PARAM_STR);
-        $stmt->bindParam(':icon', $icon, PDO::PARAM_STR);
-        $stmt->bindParam(':enabled', $enabled, PDO::PARAM_INT);
-        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-
-        if ($stmt->execute()) {
-            $success['success'] = true;
-            $success['message'] = translate('payment_method_added_successfuly', $i18n);
-            $json = json_encode($success);
-            header('Content-Type: application/json');
-            echo $json;
-            exit();
-        } else {
-            echo translate('error', $i18n) . ": " . $db->lastErrorMsg();
-        }
+    $fileInfo = @getimagesize($uploadFile);
+    if ($fileInfo === false) {
+        unlink($uploadFile);
+        json_error($errorMessage, 415);
     }
-}
-$db->close();
 
-?>
+    [$width, $height] = $fileInfo;
+    switch ($fileExtension) {
+        case 'png':
+            $image = imagecreatefrompng($uploadFile);
+            break;
+        case 'jpg':
+        case 'jpeg':
+            $image = imagecreatefromjpeg($uploadFile);
+            break;
+        case 'gif':
+            $image = imagecreatefromgif($uploadFile);
+            break;
+        case 'webp':
+            $image = imagecreatefromwebp($uploadFile);
+            break;
+        default:
+            unlink($uploadFile);
+            json_error($errorMessage, 415);
+    }
+
+    if ($fileExtension === 'png') {
+        imagesavealpha($image, true);
+    }
+
+    $newWidth = $width;
+    $newHeight = $height;
+
+    if ($width > $targetWidth) {
+        $newWidth = $targetWidth;
+        $newHeight = (int) round(($targetWidth / $width) * $height);
+    }
+    if ($newHeight > $targetHeight) {
+        $newWidth = (int) round(($targetHeight / $newHeight) * $newWidth);
+        $newHeight = $targetHeight;
+    }
+
+    $resizedImage = imagecreatetruecolor($newWidth, $newHeight);
+    imagesavealpha($resizedImage, true);
+    $transparency = imagecolorallocatealpha($resizedImage, 0, 0, 0, 127);
+    imagefill($resizedImage, 0, 0, $transparency);
+    imagecopyresampled($resizedImage, $image, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+    switch ($fileExtension) {
+        case 'png':
+            imagepng($resizedImage, $uploadFile);
+            break;
+        case 'jpg':
+        case 'jpeg':
+            imagejpeg($resizedImage, $uploadFile);
+            break;
+        case 'gif':
+            imagegif($resizedImage, $uploadFile);
+            break;
+        case 'webp':
+            imagewebp($resizedImage, $uploadFile);
+            break;
+    }
+
+    imagedestroy($image);
+    imagedestroy($resizedImage);
+
+    return $fileName;
+}
+
+function fetchLogoFromUrl(string $url, string $name, array $settings, $i18n): string
+{
+    if (!filter_var($url, FILTER_VALIDATE_URL) || !preg_match('/^https?:\/\//i', $url)) {
+        json_error('Invalid URL format for icon.', 400);
+    }
+
+    $host = parse_url($url, PHP_URL_HOST);
+    $ip = gethostbyname($host);
+    if (!$ip || filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+        json_error('Icon host resolves to a private or reserved IP address.', 400);
+    }
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 5,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_MAXREDIRS => 3,
+    ]);
+
+    $imageData = curl_exec($ch);
+    if ($imageData === false) {
+        $err = curl_error($ch);
+        curl_close($ch);
+        $message = translate('error_fetching_image', $i18n);
+        if ($err) {
+            $message .= ': ' . $err;
+        }
+        json_error($message, 502);
+    }
+    curl_close($ch);
+
+    $fileName = time() . '-payments-' . sanitizeFilename($name) . '.png';
+    $uploadFile = '../../images/uploads/logos/' . $fileName;
+    return saveLogo($imageData, $uploadFile, $settings, translate('error_fetching_image', $i18n));
+}
+
+if (!isset($_SESSION['loggedin']) || $_SESSION['loggedin'] !== true) {
+    json_error(translate('session_expired', $i18n), 401);
+}
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    json_error(translate('invalid_request_method', $i18n) ?? 'Invalid request', 405);
+}
+
+$name = validate($_POST['paymentname'] ?? '');
+$iconUrl = validate($_POST['icon-url'] ?? '');
+
+if ($name === '') {
+    json_error(translate('fill_all_fields', $i18n), 422);
+}
+
+if ($iconUrl === '' && empty($_FILES['paymenticon']['name'])) {
+    json_error(translate('fill_all_fields', $i18n), 422);
+}
+
+$icon = '';
+if ($iconUrl !== '') {
+    $icon = fetchLogoFromUrl($iconUrl, $name, $settings, $i18n);
+} elseif (!empty($_FILES['paymenticon']['name'])) {
+    $fileType = mime_content_type($_FILES['paymenticon']['tmp_name']);
+    if (strpos($fileType, 'image') === false) {
+        json_error(translate('fill_all_fields', $i18n), 415);
+    }
+    $icon = resizeAndUploadLogo($_FILES['paymenticon'], $logosDir, $name, translate('error', $i18n));
+}
+
+try {
+    // Determine custom id namespace (legacy behaviour keeps predefined ids < 32)
+    $maxIdStmt = $pdo->query('SELECT COALESCE(MAX(id), 31) FROM payment_methods');
+    $newId = (int)$maxIdStmt->fetchColumn() + 1;
+    if ($newId < 32) {
+        $newId = 32;
+    }
+
+    $orderStmt = $pdo->prepare('SELECT COALESCE(MAX("order"), 0) FROM payment_methods WHERE user_id = :uid');
+    $orderStmt->execute([':uid' => $userId]);
+    $nextOrder = (int)$orderStmt->fetchColumn() + 1;
+
+    $insert = $pdo->prepare('INSERT INTO payment_methods (id, name, icon, enabled, "order", user_id)
+                              VALUES (:id, :name, :icon, TRUE, :ord, :uid)');
+    $insert->bindValue(':id', $newId, PDO::PARAM_INT);
+    $insert->bindValue(':name', $name, PDO::PARAM_STR);
+    $insert->bindValue(':icon', $icon !== '' ? $icon : null, $icon !== '' ? PDO::PARAM_STR : PDO::PARAM_NULL);
+    $insert->bindValue(':ord', $nextOrder, PDO::PARAM_INT);
+    $insert->bindValue(':uid', $userId, PDO::PARAM_INT);
+    $insert->execute();
+} catch (Throwable $e) {
+    error_log('[payments/add] insert failed: ' . $e->getMessage());
+    json_error(translate('error', $i18n) . ': ' . $e->getMessage(), 500);
+}
+
+json_success(translate('payment_method_added_successfuly', $i18n) ?? 'Payment method added', [
+    'id' => $newId,
+    'name' => $name,
+    'icon' => $icon,
+]);

@@ -79,7 +79,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
-        if ($row['totp_enabled'] == 1) {
+        $alreadyEnabled = ($row['totp_enabled'] === true) || $row['totp_enabled'] === 't' || $row['totp_enabled'] === 1 || $row['totp_enabled'] === '1';
+        if ($alreadyEnabled) {
             die(json_encode([
                 "success" => false,
                 "message" => translate('2fa_already_enabled', $i18n)
@@ -113,7 +114,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
             // Update user totp_enabled
 
-            $stmt = $pdo->prepare("UPDATE users SET totp_enabled = 1 WHERE id = :user_id");
+            $stmt = $pdo->prepare("UPDATE users SET totp_enabled = TRUE WHERE id = :user_id");
             $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
             $stmt->execute();
 

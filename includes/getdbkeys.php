@@ -22,9 +22,8 @@
     }
 
     $payment_methods = array();
-    // Use proper statement variable and quote reserved column name for PostgreSQL
-    $stmt = $pdo->prepare("SELECT * FROM payment_methods WHERE enabled = :enabled AND user_id = :userId ORDER BY \"order\" ASC");
-    $stmt->bindValue(':enabled', 1, PDO::PARAM_INT);
+    // Only enabled methods; boolean comparison for Postgres
+    $stmt = $pdo->prepare("SELECT * FROM payment_methods WHERE enabled = TRUE AND user_id = :userId ORDER BY \"order\" ASC");
     $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
     $stmt->execute();
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {

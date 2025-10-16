@@ -19,7 +19,7 @@ const editSvgContent = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" view
 </svg>`;
 
 function saveBudget() {
-  const button = document.getElementById("saveBudget");
+  const button = document.getElementById("saveBudgetBtn");
   button.disabled = true;
 
   const budget = document.getElementById("budget").value;
@@ -31,14 +31,41 @@ function saveBudget() {
     },
     body: JSON.stringify({ budget: budget })
   })
-    .then(response => response.json())
-    .then(data => {
-      if (data.success) {
-        showSuccessMessage(data.message);
-      } else {
-        showErrorMessage(data.message);
+    .then(async (response) => {
+      try {
+        const data = await response.json();
+        return { ok: response.ok, data };
+      } catch (e) {
+        return { ok: response.ok, data: null };
       }
-      button.disabled = false;
+    })
+    .then(({ ok, data }) => {
+      const isSuccess = ok && data && (data.success === true || data.status === 'Success');
+      if (isSuccess) {
+        showSuccessMessage(data.message);
+        // After successful save, update initial value and disable button
+        const btn = document.getElementById('saveBudgetBtn');
+        const input = document.getElementById('budget');
+        if (btn && input) {
+          btn.dataset.initialBudget = (input.value || '').trim();
+          btn.disabled = true;
+          btn.classList.add('disabled');
+        }
+      } else if (ok && (!data || typeof data !== 'object')) {
+        // Fallback: backend returned non-JSON but was OK
+        showSuccessMessage(translate('user_details_saved'));
+        const btn = document.getElementById('saveBudgetBtn');
+        const input = document.getElementById('budget');
+        if (btn && input) {
+          btn.dataset.initialBudget = (input.value || '').trim();
+          btn.disabled = true;
+          btn.classList.add('disabled');
+        }
+      } else {
+        const msg = data && data.message ? data.message : translate('unknown_error');
+        showErrorMessage(msg);
+        button.disabled = false;
+      }
     })
     .catch(error => {
       showErrorMessage(translate('unknown_error'));
@@ -46,6 +73,32 @@ function saveBudget() {
     });
 
 }
+
+// Initialize budget save button disabled state until value changes
+function initBudgetSaveState() {
+  const input = document.getElementById('budget');
+  const saveBtn = document.getElementById('saveBudgetBtn');
+  if (!input || !saveBtn) return;
+
+  saveBtn.dataset.initialBudget = (input.value || '').trim();
+  saveBtn.disabled = true;
+  saveBtn.classList.add('disabled');
+
+  const updateState = () => {
+    const current = (input.value || '').trim();
+    const initial = saveBtn.dataset.initialBudget || '';
+    const isNumeric = (s) => s === '' ? true : !isNaN(Number(s));
+    const changed = current !== initial;
+    const valid = isNumeric(current);
+    const enable = changed && valid;
+    saveBtn.disabled = !enable;
+    saveBtn.classList.toggle('disabled', !enable);
+  };
+
+  input.addEventListener('input', updateState);
+}
+
+window.addEventListener('DOMContentLoaded', initBudgetSaveState);
 
 function addMemberButton(memberId) {
   document.getElementById("addMember").disabled = true;
@@ -104,6 +157,7 @@ function addMemberButton(memberId) {
         div.appendChild(deleteLink);
 
         container.appendChild(div);
+        showSuccessMessage(translate('success'));
       } else {
         showErrorMessage(responseData.errorMessage);
       }
@@ -227,6 +281,7 @@ function addCategoryButton(categoryId) {
         row.appendChild(deleteLink);
 
         container.appendChild(row);
+        showSuccessMessage(translate('success'));
       } else {
         showErrorMessage(responseData.errorMessage);
       }
@@ -360,13 +415,14 @@ function addCurrencyButton(currencyId) {
         div.appendChild(deleteLink);
 
         container.appendChild(div);
+        showSuccessMessage(translate('success'));
       } else {
-        // TODO: Show error
+        showErrorMessage(translate('error_adding_currency'));
       }
       document.getElementById("addCurrency").disabled = false;
     })
     .catch(error => {
-      // TODO: Show error
+      showErrorMessage(translate('error_adding_currency'));
       document.getElementById("addCurrency").disabled = false;
     });
 
@@ -744,13 +800,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
-    })
-    .catch(error => {
-      showErrorMessage(error);
-      document.getElementById("addFixerKey").disabled = false;
-    });
-}
-
 function storeSettingsOnDB(endpoint, value) {
   fetch('endpoints/settings/' + endpoint + '.php', {
     method: 'POST',
@@ -766,6 +815,10 @@ function storeSettingsOnDB(endpoint, value) {
       } else {
         showErrorMessage(data.errorMessage);
       }
+    })
+    .catch(error => {
+      console.error(error);
+      showErrorMessage(translate('unknown_error'));
     });
 }
 
@@ -908,15 +961,6 @@ function toggleAiInputs() {
     apiKeyInput.classList.remove("hidden");
     ollamaHostInput.classList.add("hidden");
   }
-}
-
-      } else {
-        showErrorMessage(data.errorMessage);
-      }
-    })
-    .catch(error => {
-      showErrorMessage(translate('unknown_error'));
-    });
 }
 
 function runAiRecommendations() {

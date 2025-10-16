@@ -11,7 +11,12 @@ $stmt = $pdo->prepare($query);
 $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
 $stmt->execute();
 $row = $stmt->fetch(PDO::FETCH_ASSOC);
-$code = $row['code'];
+if ($row && isset($row['code'])) {
+  $code = $row['code'];
+} else {
+  // Fallback when main currency is not set yet
+  $code = 'USD';
+}
 
 require_once 'includes/stats_calculations.php';
 
@@ -244,7 +249,7 @@ require_once 'includes/stats_calculations.php';
     }
   }
 
-  $showCategoryCostGraph = count($categoryDataPoints) > 1;
+  $showCategoryCostGraph = count($categoryDataPoints) > 0;
 
   $memberDataPoints = [];
   if (isset($memberCost)) {
@@ -259,7 +264,7 @@ require_once 'includes/stats_calculations.php';
     }
   }
 
-  $showMemberCostGraph = count($memberDataPoints) > 1;
+  $showMemberCostGraph = count($memberDataPoints) > 0;
 
   $paymentMethodDataPoints = [];
   foreach ($paymentMethodsCount as $paymentMethod) {
@@ -271,7 +276,7 @@ require_once 'includes/stats_calculations.php';
     }
   }
 
-  $showPaymentMethodsGraph = count($paymentMethodDataPoints) > 1;
+  $showPaymentMethodsGraph = count($paymentMethodDataPoints) > 0;
   if ($showCategoryCostGraph || $showMemberCostGraph || $showPaymentMethodsGraph || $showTotalMonthlyCostGraph || $showVsBudgetGraph) {
     ?>
     <h2><?= translate('split_views', $i18n) ?></h2>
@@ -349,11 +354,17 @@ if ($showCategoryCostGraph || $showMemberCostGraph || $showPaymentMethodsGraph |
   <script src="scripts/libs/chart.js"></script>
   <script type="text/javascript">
     window.onload = function () {
-      loadLineGraph("totalMonthlyCostChart", <?php echo json_encode($totalMonthlyCostDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", "<?= $showTotalMonthlyCostGraph ?>");
-      loadGraph("categorySplitChart", <?php echo json_encode($categoryDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showCategoryCostGraph ?>);
-      loadGraph("memberSplitChart", <?php echo json_encode($memberDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showMemberCostGraph ?>);
-      loadGraph("paymentMethidSplitChart", <?php echo json_encode($paymentMethodDataPoints, JSON_NUMERIC_CHECK); ?>, "", <?= $showPaymentMethodsGraph ?>);
-      loadGraph("budgetVsCostChart", <?php echo json_encode($vsBudgetDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", <?= $showVsBudgetGraph ?>);
+      const showTotalMonthlyCost = <?= json_encode($showTotalMonthlyCostGraph) ?>;
+      const showCategoryCost = <?= json_encode($showCategoryCostGraph) ?>;
+      const showMemberCost = <?= json_encode($showMemberCostGraph) ?>;
+      const showPaymentMethods = <?= json_encode($showPaymentMethodsGraph) ?>;
+      const showVsBudget = <?= json_encode($showVsBudgetGraph) ?>;
+
+      loadLineGraph("totalMonthlyCostChart", <?php echo json_encode($totalMonthlyCostDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", showTotalMonthlyCost);
+      loadGraph("categorySplitChart", <?php echo json_encode($categoryDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", showCategoryCost);
+      loadGraph("memberSplitChart", <?php echo json_encode($memberDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", showMemberCost);
+      loadGraph("paymentMethidSplitChart", <?php echo json_encode($paymentMethodDataPoints, JSON_NUMERIC_CHECK); ?>, "", showPaymentMethods);
+      loadGraph("budgetVsCostChart", <?php echo json_encode($vsBudgetDataPoints, JSON_NUMERIC_CHECK); ?>, "<?= $code ?>", showVsBudget);
     }
   </script>
   <?php

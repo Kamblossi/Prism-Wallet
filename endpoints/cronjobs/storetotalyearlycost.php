@@ -49,7 +49,7 @@ function getPriceConverted($price, $currency, $database, $userId)
 
 // Get all users
 
-$query = "SELECT id, main_currency FROM user";
+$query = "SELECT id, main_currency FROM users";
 $stmt = $pdo->prepare($query);
 $stmt->execute();
 
@@ -58,12 +58,11 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $userCurrencyId = $row['main_currency'];
     $totalYearlyCost = 0;
 
-    $query = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = 0";
+    $query = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = FALSE";
     $stmt = $pdo->prepare($query);
     $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-    $resultSubscriptions = $stmt->execute();
-
-    while ($rowSubscriptions = $resultSubscriptions->fetch(PDO::FETCH_ASSOC)) {
+    $stmt->execute();
+    while ($rowSubscriptions = $stmt->fetch(PDO::FETCH_ASSOC)) {
         $originalSubscriptionPrice = getPriceConverted($rowSubscriptions['price'], $rowSubscriptions['currency_id'], $db, $userId);
         $price = getPricePerMonth($rowSubscriptions['cycle'], $rowSubscriptions['frequency'], $originalSubscriptionPrice) * 12;
         $totalYearlyCost += $price;

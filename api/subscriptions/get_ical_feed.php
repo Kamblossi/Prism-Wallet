@@ -111,17 +111,16 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         $paymentMethods[$paymentMethod['id']] = $paymentMethod['name'];
     }
 
-    $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = 0 ORDER BY next_payment ASC";
+    $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = FALSE ORDER BY next_payment ASC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
     $stmt->execute();
 
-    // PDO conversion - removed result check
-        $subscriptions = array();
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $subscriptions[] = $row;
-        }
+    // Fetch all active subscriptions
+    $subscriptions = array();
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $subscriptions[] = $row;
     }
 
     $subscriptionsToReturn = array();
@@ -152,19 +151,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
         $subscriptionsToReturn[] = $subscriptionToReturn;
     }
 
-    $stmt->bindValue(':inactive', false, PDO::PARAM_INT);
-    $stmt->execute();
-
     header('Content-Type: text/calendar; charset=utf-8');
     header('Content-Disposition: attachment; filename="subscriptions.ics"');
 
-    if ($result === false) {
-        die("BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:NAME:\nEND:VCALENDAR");
-    }
-
     $icsContent = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Wallos//iCalendar//EN\nNAME:Wallos\nX-WR-CALNAME:Wallos\n";
 
-    while ($subscription = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    foreach ($subscriptions as $subscription) {
         $subscription['payer_user'] = $members[$subscription['payer_user_id']];
         $subscription['category'] = $categories[$subscription['category_id']];
         $subscription['payment_method'] = $paymentMethods[$subscription['payment_method_id']];

@@ -164,7 +164,7 @@ if (!empty($userData['avatar']) && strpos($userData['avatar'], '/') === false) {
     }
 }
 if (!isset($userData['totp_enabled'])) {
-    $userData['totp_enabled'] = 0;
+    $userData['totp_enabled'] = false;
 }
 
 // No more cookie or session handling beyond local auth

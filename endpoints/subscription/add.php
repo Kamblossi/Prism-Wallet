@@ -204,44 +204,74 @@ function resizeAndUploadLogo($uploadedFile, $uploadDir, $name, $settings)
 
 if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     if ($_SERVER["REQUEST_METHOD"] === "POST") {
-        $isEdit = isset($_POST['id']) && $_POST['id'] != "";
-        $name = validate($_POST["name"]);
-        $price = $_POST['price'];
-        $currencyId = $_POST["currency_id"];
-        $frequency = $_POST["frequency"];
-        $cycle = $_POST["cycle"];
-        $nextPayment = $_POST["next_payment"];
-        $autoRenew = isset($_POST['auto_renew']) ? true : false;
-        $startDate = $_POST["start_date"];
-        $paymentMethodId = $_POST["payment_method_id"];
-        $payerUserId = $_POST["payer_user_id"];
-        $categoryId = $_POST['category_id'];
-        $notes = validate($_POST["notes"]);
-        $url = validate($_POST['url']);
-        $logoUrl = validate($_POST['logo-url']);
-        $logo = "";
-        $notify = isset($_POST['notifications']) ? true : false;
-        $notifyDaysBefore = $_POST['notify_days_before'];
-        $inactive = isset($_POST['inactive']) ? true : false;
+        $isEdit = isset($_POST['id']) && $_POST['id'] !== "";
+        $name = validate($_POST["name"] ?? "");
+        $priceRaw = trim($_POST['price'] ?? '');
+        $currencyId = (int)($_POST["currency_id"] ?? 0);
+        $frequency = (int)($_POST["frequency"] ?? 0);
+        $cycle = (int)($_POST["cycle"] ?? 0);
+        $nextPayment = trim($_POST["next_payment"] ?? '');
+        $startDate = trim($_POST["start_date"] ?? '');
+        $autoRenew = isset($_POST['auto_renew']) ? 1 : 0;
+        $paymentMethodId = (int)($_POST["payment_method_id"] ?? 0);
+        $payerUserId = (int)($_POST["payer_user_id"] ?? 0);
+        $categoryId = (int)($_POST['category_id'] ?? 0);
+        $notes = validate($_POST["notes"] ?? "");
+        $notes = $notes === "" ? null : $notes;
+        $url = validate($_POST['url'] ?? "");
+        $url = $url === "" ? null : $url;
+        $logoUrl = validate($_POST['logo-url'] ?? "");
+        $logo = null;
+        $notify = isset($_POST['notifications']) ? 1 : 0;
+        $notifyDaysBeforeRaw = $_POST['notify_days_before'] ?? null;
+        if (!$notify) {
+            $notifyDaysBefore = -1;
+        } elseif ($notifyDaysBeforeRaw === '' || $notifyDaysBeforeRaw === null) {
+            $notifyDaysBefore = -1;
+        } else {
+            $notifyDaysBefore = (int)$notifyDaysBeforeRaw;
+        }
+        $inactive = isset($_POST['inactive']) ? 1 : 0;
         $cancellationDate = $_POST['cancellation_date'] ?? null;
-        $replacementSubscriptionId = $_POST['replacement_subscription_id'];
-
-        if ($replacementSubscriptionId == 0 || $inactive == 0) {
+        if ($cancellationDate === '') {
+            $cancellationDate = null;
+        }
+        $replacementSubscriptionId = $_POST['replacement_subscription_id'] ?? null;
+        if (empty($replacementSubscriptionId) || $replacementSubscriptionId == 0 || $inactive === 0) {
             $replacementSubscriptionId = null;
+        } else {
+            $replacementSubscriptionId = (int)$replacementSubscriptionId;
+        }
+
+        if ($name === "" || $priceRaw === '' || $currencyId === 0 || $frequency === 0 || $cycle === 0 || $nextPayment === '' || $startDate === '' || $paymentMethodId === 0 || $payerUserId === 0 || $categoryId === 0) {
+            http_response_code(400);
+            echo json_encode([
+                'status' => 'Error',
+                'message' => translate("fill_all_fields", $i18n)
+            ]);
+            exit();
         }
 
         if ($logoUrl !== "") {
-            $logo = getLogoFromUrl($logoUrl, '../../images/uploads/logos/', $name, $settings, $i18n);
-        } else {
-            if (!empty($_FILES['logo']['name'])) {
-                $fileType = mime_content_type($_FILES['logo']['tmp_name']);
-                if (strpos($fileType, 'image') === false) {
-                    echo translate("fill_all_fields", $i18n);
-                    exit();
-                }
-                $logo = resizeAndUploadLogo($_FILES['logo'], '../../images/uploads/logos/', $name, $settings);
+            $logoFromUrl = getLogoFromUrl($logoUrl, '../../images/uploads/logos/', $name, $settings, $i18n);
+            $logo = $logoFromUrl !== "" ? $logoFromUrl : null;
+        } elseif (!empty($_FILES['logo']['name'])) {
+            $fileType = mime_content_type($_FILES['logo']['tmp_name']);
+            if (strpos($fileType, 'image') === false) {
+                http_response_code(400);
+                echo json_encode([
+                    'status' => 'Error',
+                    'message' => translate("fill_all_fields", $i18n)
+                ]);
+                exit();
             }
+            $uploadedLogo = resizeAndUploadLogo($_FILES['logo'], '../../images/uploads/logos/', $name, $settings);
+            $logo = $uploadedLogo !== "" ? $uploadedLogo : null;
         }
+
+        $nextPayment = $nextPayment === '' ? null : $nextPayment;
+        $startDate = $startDate === '' ? null : $startDate;
+        $price = $priceRaw;
 
         if (!$isEdit) {
             $sql = "INSERT INTO subscriptions (
@@ -277,7 +307,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
                         cancellation_date = :cancellationDate, 
                         replacement_subscription_id = :replacement_subscription_id";
 
-            if ($logo != "") {
+            if ($logo !== null) {
                 $sql .= ", logo = :logo";
             }
 
@@ -285,33 +315,43 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
         }
 
         $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':name', $name, PDO::PARAM_STR);
-        if ($logo != "") {
-            $stmt->bindParam(':logo', $logo, PDO::PARAM_STR);
-        }
-        $stmt->bindParam(':price', $price, PDO::PARAM_STR);
-        $stmt->bindParam(':currencyId', $currencyId, PDO::PARAM_INT);
-        $stmt->bindParam(':nextPayment', $nextPayment, PDO::PARAM_STR);
-        $stmt->bindParam(':autoRenew', $autoRenew, PDO::PARAM_INT);
-        $stmt->bindParam(':startDate', $startDate, PDO::PARAM_STR);
-        $stmt->bindParam(':cycle', $cycle, PDO::PARAM_INT);
-        $stmt->bindParam(':frequency', $frequency, PDO::PARAM_INT);
-        $stmt->bindParam(':notes', $notes, PDO::PARAM_STR);
-        $stmt->bindParam(':paymentMethodId', $paymentMethodId, PDO::PARAM_INT);
-        $stmt->bindParam(':payerUserId', $payerUserId, PDO::PARAM_INT);
-        $stmt->bindParam(':categoryId', $categoryId, PDO::PARAM_INT);
-        $stmt->bindParam(':notify', $notify, PDO::PARAM_INT);
-        $stmt->bindParam(':inactive', $inactive, PDO::PARAM_INT);
-        $stmt->bindParam(':url', $url, PDO::PARAM_STR);
-        $stmt->bindParam(':notifyDaysBefore', $notifyDaysBefore, PDO::PARAM_INT);
-        $stmt->bindParam(':cancellationDate', $cancellationDate, PDO::PARAM_STR);
+        $stmt->bindValue(':name', $name, PDO::PARAM_STR);
         if ($isEdit) {
-            $stmt->bindParam(':id', $id, PDO::PARAM_INT);
+            if ($logo !== null) {
+                $stmt->bindValue(':logo', $logo, PDO::PARAM_STR);
+            }
+        } else {
+            $stmt->bindValue(':logo', $logo, $logo !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
         }
-        $stmt->bindParam(':userId', $userId, PDO::PARAM_INT);
-        $stmt->bindParam(':replacement_subscription_id', $replacementSubscriptionId, PDO::PARAM_INT);
+        $stmt->bindValue(':price', $price, PDO::PARAM_STR);
+        $stmt->bindValue(':currencyId', $currencyId, PDO::PARAM_INT);
+        $stmt->bindValue(':nextPayment', $nextPayment, $nextPayment !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $stmt->bindValue(':autoRenew', $autoRenew, PDO::PARAM_INT);
+        $stmt->bindValue(':startDate', $startDate, $startDate !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $stmt->bindValue(':cycle', $cycle, PDO::PARAM_INT);
+        $stmt->bindValue(':frequency', $frequency, PDO::PARAM_INT);
+        $stmt->bindValue(':notes', $notes, $notes !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $stmt->bindValue(':paymentMethodId', $paymentMethodId, PDO::PARAM_INT);
+        $stmt->bindValue(':payerUserId', $payerUserId, PDO::PARAM_INT);
+        $stmt->bindValue(':categoryId', $categoryId, PDO::PARAM_INT);
+        $stmt->bindValue(':notify', $notify, PDO::PARAM_INT);
+        $stmt->bindValue(':inactive', $inactive, PDO::PARAM_INT);
+        $stmt->bindValue(':url', $url, $url !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $stmt->bindValue(':notifyDaysBefore', $notifyDaysBefore, PDO::PARAM_INT);
+        $stmt->bindValue(':cancellationDate', $cancellationDate, $cancellationDate !== null ? PDO::PARAM_STR : PDO::PARAM_NULL);
+        $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
+        if ($replacementSubscriptionId !== null) {
+            $stmt->bindValue(':replacement_subscription_id', $replacementSubscriptionId, PDO::PARAM_INT);
+        } else {
+            $stmt->bindValue(':replacement_subscription_id', null, PDO::PARAM_NULL);
+        }
 
-        if ($stmt->execute()) {
+        if ($isEdit) {
+            $stmt->bindValue(':id', (int)$id, PDO::PARAM_INT);
+        }
+
+        try {
+            $stmt->execute();
             $success['status'] = "Success";
             $text = $isEdit ? "updated" : "added";
             $success['message'] = translate('subscription_' . $text . '_successfuly', $i18n);
@@ -319,8 +359,14 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             header('Content-Type: application/json');
             echo $json;
             exit();
-        } else {
-            echo translate('error', $i18n) . ": " . $db->lastErrorMsg();
+        } catch (PDOException $e) {
+            error_log('Subscription save failed: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode([
+                'status' => 'Error',
+                'message' => translate('error', $i18n) . ': ' . $e->getMessage()
+            ]);
+            exit();
         }
     }
 }

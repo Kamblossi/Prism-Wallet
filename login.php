@@ -4,13 +4,6 @@ require_once __DIR__ . '/includes/connect.php';
 $error = '';
 $notice = '';
 
-// Offer OIDC login when enabled
-$oidcEnabled = false;
-try {
-  $row = $pdo->query('SELECT oidc_oauth_enabled FROM oauth_settings WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
-  $oidcEnabled = $row && (int)($row['oidc_oauth_enabled'] ?? 0) === 1;
-} catch (Throwable $e) { $oidcEnabled = false; }
-
 // Handle resend verification email request
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['resend_verification'])) {
   $resendEmail = trim($_POST['resend_email'] ?? '');
@@ -96,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Login</title>
   <link rel="stylesheet" href="/styles/login.css?v=1" />
-  <style>body{font-family:system-ui,Segoe UI,Roboto,sans-serif;margin:0;display:grid;place-items:center;min-height:100vh}form{display:flex;flex-direction:column;gap:12px;padding:24px;border:1px solid #e3e3e3;border-radius:8px;min-width:320px}input{padding:10px 12px;border:1px solid #ccc;border-radius:6px}button{padding:10px 12px;border:0;border-radius:6px;background:#1e90ff;color:#fff;cursor:pointer}</style>
+  <style>body{font-family:system-ui,Segoe UI,Roboto,sans-serif;margin:0;display:grid;place-items:center;min-height:100vh}form{display:flex;flex-direction:column;gap:12px;padding:24px;border:1px solid #e3e3e3;border-radius:8px;min-width:320px}input{padding:10px 12px;border:1px solid #ccc;border-radius:6px}button{padding:10px 12px;border:0;border-radius:6px;background:#1e90ff;color:#fff;cursor:pointer}form.hidden{display:none!important}</style>
   </head>
 <body>
   <div id="toast-container" style="position:fixed;top:16px;right:16px;z-index:9999"></div>
@@ -122,15 +115,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <a href="/register.php">Create an account</a>
   </form>
 
-  <?php if ($oidcEnabled): ?>
-  <div style="margin-top:12px;">
-    <form method="get" action="/endpoints/oidc/login.php">
-      <button type="submit">Login with Single Sign-On</button>
-    </form>
-  </div>
-  <?php endif; ?>
-
-  <form method="post" style="margin-top:16px;">
+  <form method="post" class="hidden" style="margin-top:16px;">
     <h3>Resend verification email</h3>
     <input type="email" name="resend_email" placeholder="Email" required />
     <button type="submit" name="resend_verification" value="1">Resend</button>

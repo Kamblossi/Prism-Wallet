@@ -1,4 +1,4 @@
 <?php
-// Version bump to force cache bust after tighter WA kerning.
-$version = "v4.3.4";
+// Version bump to force cache bust after settings.js fixes.
+$version = "v4.3.5";
 ?>

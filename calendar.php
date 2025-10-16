@@ -60,7 +60,7 @@ $numberOfSubscriptionsToPayThisMonth = 0;
 $totalCostThisMonth = 0;
 $amountDueThisMonth = 0;
 
-$query = "SELECT * FROM subscriptions WHERE user_id = :user_id AND inactive = 0";
+$query = "SELECT * FROM subscriptions WHERE user_id = :user_id AND inactive = FALSE";
 $stmt = $pdo->prepare($query);
 $stmt->bindValue(':user_id', $userId, PDO::PARAM_INT);
 $stmt->execute();

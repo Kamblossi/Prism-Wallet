@@ -11,12 +11,13 @@ if (!$auth0) {
 
 // Build login URL and redirect. SDK handles state/nonce.
 $params = [];
-// Optionally request organization or connection via query string passthrough
-if (isset($_GET['organization'])) { $params['organization'] = $_GET['organization']; }
-if (isset($_GET['connection'])) { $params['connection'] = $_GET['connection']; }
+// Optional passthroughs
+if (isset($_GET['organization']) && $_GET['organization'] !== '') { $params['organization'] = $_GET['organization']; }
+if (isset($_GET['connection']) && $_GET['connection'] !== '') { $params['connection'] = $_GET['connection']; }
+if (isset($_GET['screen_hint']) && $_GET['screen_hint'] !== '') { $params['screen_hint'] = $_GET['screen_hint']; }
+if (isset($_GET['login_hint']) && $_GET['login_hint'] !== '') { $params['login_hint'] = $_GET['login_hint']; }
+if (isset($_GET['prompt']) && $_GET['prompt'] !== '') { $params['prompt'] = $_GET['prompt']; }
 
 $authUrl = $auth0->login($params);
 header('Location: ' . $authUrl);
 exit;
-?>
-

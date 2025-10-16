@@ -26,7 +26,7 @@ $statement->bindValue(':id', $userId, PDO::PARAM_INT);
 $result = $statement->execute();
 $row = $statement->fetch(PDO::FETCH_ASSOC);
 
-if ($row['totp_enabled'] == 0) {
+if ($row && ($row['totp_enabled'] === false || $row['totp_enabled'] === 'f' || $row['totp_enabled'] === 0 || $row['totp_enabled'] === '0' || $row['totp_enabled'] === null)) {
     die(json_encode([
         "success" => false,
         "message" => "2FA is not enabled for this user",
@@ -71,7 +71,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $totp->setPeriod(30);
 
         if ($totp->verify($totp_code, null, 15)) {
-            $statement = $pdo->prepare('UPDATE users SET totp_enabled = 0 WHERE id = :id');
+            $statement = $pdo->prepare('UPDATE users SET totp_enabled = FALSE WHERE id = :id');
             $statement->bindValue(':id', $userId, PDO::PARAM_INT);
             $statement->execute();
 
@@ -98,7 +98,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             // Search for the normalized code
             if (($key = array_search($totp_code, $normalizedBackupCodes)) !== false) {
                 // Match found, disable TOTP
-                $statement = $pdo->prepare('UPDATE users SET totp_enabled = 0 WHERE id = :id');
+                $statement = $pdo->prepare('UPDATE users SET totp_enabled = FALSE WHERE id = :id');
                 $statement->bindValue(':id', $userId, PDO::PARAM_INT);
                 $statement->execute();
 

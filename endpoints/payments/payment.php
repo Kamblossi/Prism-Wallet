@@ -17,12 +17,12 @@ if (!isset($_GET['paymentId']) || !isset($_GET['enabled'])) {
 
 $paymentId = $_GET['paymentId'];
 
-$stmt = $pdo->prepare('SELECT COUNT(*) as count FROM subscriptions WHERE payment_method_id=:paymentId and user_id=:userId');
+$stmt = $pdo->prepare('SELECT COUNT(*) as count FROM subscriptions WHERE payment_method_id = :paymentId AND user_id = :userId');
 $stmt->bindValue(':paymentId', $paymentId, PDO::PARAM_INT);
 $stmt->bindValue(':userId', $userId, PDO::PARAM_INT);
 $stmt->execute();
-$row = $result->fetchArray();
-$inUse = $row['count'] === 1;
+$row = $stmt->fetch(PDO::FETCH_ASSOC);
+$inUse = ((int)($row['count'] ?? 0)) > 0;
 
 if ($inUse) {
     die(json_encode([
@@ -31,16 +31,17 @@ if ($inUse) {
     ]));
 }
 
-$enabled = $_GET['enabled'];
+$enabledRaw = $_GET['enabled'];
+$enabled = ($enabledRaw === '1' || $enabledRaw === 'true' || $enabledRaw === 't' || $enabledRaw === 1 || $enabledRaw === true);
 
-$sqlUpdate = 'UPDATE payment_methods SET enabled=:enabled WHERE id=:id and user_id=:userId';
+$sqlUpdate = 'UPDATE payment_methods SET enabled = :enabled WHERE id = :id AND user_id = :userId';
 $stmtUpdate = $pdo->prepare($sqlUpdate);
-$stmtUpdate->bindParam(':enabled', $enabled);
+$stmtUpdate->bindValue(':enabled', $enabled, PDO::PARAM_BOOL);
 $stmtUpdate->bindParam(':id', $paymentId);
 $stmtUpdate->bindParam(':userId', $userId);
 $resultUpdate = $stmtUpdate->execute();
 
-$text = $enabled ? "enabled" : "disabled";
+$text = $enabled ? 'enabled' : 'disabled';
 
 if ($resultUpdate) {
     die(json_encode([

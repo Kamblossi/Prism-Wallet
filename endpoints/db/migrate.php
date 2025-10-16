@@ -43,9 +43,8 @@ try {
         $idx = $pdo->query("SELECT indexname FROM pg_indexes WHERE tablename='users' AND indexdef ILIKE '%(clerk_id%' LIMIT 1")->fetchColumn();
         if ($idx) { $pdo->exec("DROP INDEX IF EXISTS \"$idx\""); }
     } catch (Throwable $e) { }
-    try {
-        $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT");
-    } catch (Throwable $e) { /* ignore */ }
+    try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT"); } catch (Throwable $e) { /* ignore */ }
+    try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN DEFAULT FALSE"); } catch (Throwable $e) { /* ignore */ }
 
     // Add lifecycle columns to users (idempotent)
     try { $pdo->exec("ALTER TABLE users ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE"); } catch (Throwable $e) { }
@@ -229,6 +228,29 @@ try {
         )
     ");
 
+    // Two-factor (TOTP) storage
+    execSql($pdo, "
+        CREATE TABLE IF NOT EXISTS totp (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            totp_secret TEXT NOT NULL,
+            backup_codes TEXT,
+            last_totp_used BIGINT
+        )
+    ");
+
+    // Dashboard historical totals (per user, per snapshot date)
+    execSql($pdo, "
+        CREATE TABLE IF NOT EXISTS total_yearly_cost (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            date DATE NOT NULL,
+            cost NUMERIC(14,2) NOT NULL DEFAULT 0,
+            currency BIGINT REFERENCES currencies(id) ON DELETE SET NULL
+        )
+    ");
+    try { $pdo->exec("CREATE INDEX IF NOT EXISTS idx_total_yearly_cost_user_date ON total_yearly_cost (user_id, date)"); } catch (Throwable $e) { }
+
     // cycles (payment intervals like Daily/Weekly/Monthly/Yearly)
     execSql($pdo, "
         CREATE TABLE IF NOT EXISTS cycles (
@@ -252,19 +274,46 @@ try {
             logo TEXT,
             price NUMERIC(12,2) NOT NULL,
             currency_id BIGINT REFERENCES currencies(id) ON DELETE SET NULL,
+            start_date DATE,
             next_payment DATE,
             cycle INTEGER,
             frequency INTEGER,
+            auto_renew BOOLEAN DEFAULT TRUE,
             notes TEXT,
             payment_method_id BIGINT REFERENCES payment_methods(id) ON DELETE SET NULL,
             payer_user_id BIGINT REFERENCES household(id) ON DELETE SET NULL,
             category_id BIGINT REFERENCES categories(id) ON DELETE SET NULL,
+            notify BOOLEAN DEFAULT FALSE,
+            notify_days_before INTEGER DEFAULT -1,
+            url TEXT,
             inactive BOOLEAN DEFAULT FALSE,
-            auto_renew BOOLEAN DEFAULT TRUE,
-            replacement_subscription_id BIGINT,
-            notify BOOLEAN DEFAULT FALSE
+            cancellation_date DATE,
+            replacement_subscription_id BIGINT
         )
     ");
+
+    $subscriptionAlters = [
+        "ADD COLUMN IF NOT EXISTS start_date DATE",
+        "ADD COLUMN IF NOT EXISTS notify_days_before INTEGER DEFAULT -1",
+        "ADD COLUMN IF NOT EXISTS url TEXT",
+        "ADD COLUMN IF NOT EXISTS cancellation_date DATE",
+        "ADD COLUMN IF NOT EXISTS auto_renew BOOLEAN DEFAULT TRUE",
+        "ADD COLUMN IF NOT EXISTS replacement_subscription_id BIGINT"
+    ];
+
+    foreach ($subscriptionAlters as $alter) {
+        try {
+            $pdo->exec("ALTER TABLE subscriptions {$alter}");
+        } catch (Throwable $e) {
+            error_log('[migration] subscriptions alter failed: ' . $e->getMessage());
+        }
+    }
+
+    try {
+        $pdo->exec("ALTER TABLE subscriptions ALTER COLUMN notify_days_before SET DEFAULT -1");
+    } catch (Throwable $e) {
+        error_log('[migration] subscriptions default update failed: ' . $e->getMessage());
+    }
 
     // last_exchange_update captures last exchange-rate update per user
     execSql($pdo, "

@@ -251,7 +251,7 @@ $mobileNavigation = $settings['mobile_nav'] ? "mobile-navigation" : "";
   ?>
 
   <?php
-  if ($settings['mobile_nav'] == 1) {
+  if (!empty($settings['mobile_nav'])) {
     ?>
     <nav class="mobile-nav">
         <a href="." class="nav-link <?= $dashboardClass ?>" title="<?= translate('dashboard', $i18n) ?>">

@@ -31,7 +31,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
             <div class="form-group-inline">
                 <label for="budget"><?= $userData['currency_symbol'] ?></label>
                 <input type="number" id="budget" name="budget" value="<?= $userData['budget'] ?>" placeholder="Budget">
-                <input type="submit" value="<?= translate('save', $i18n) ?>" id="saveBudget" onClick="saveBudget()" />
+                <input type="submit" value="<?= translate('save', $i18n) ?>" id="saveBudgetBtn" onClick="saveBudget()" />
             </div>
             <div class="settings-notes">
                 <p>

@@ -3,11 +3,12 @@ require_once __DIR__ . '/includes/connect.php';
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 // Read OIDC logout before clearing session
-$logoutUrl = null;
+$logoutUrl = null; $clientId = null;
 try {
-    $row = $pdo->query('SELECT oidc_oauth_enabled, logout_url FROM oauth_settings WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
+    $row = $pdo->query('SELECT oidc_oauth_enabled, logout_url, client_id FROM oauth_settings WHERE id = 1')->fetch(PDO::FETCH_ASSOC);
     if ($row && (int)($row['oidc_oauth_enabled'] ?? 0) === 1) {
-        $logoutUrl = $row['logout_url'] ?? null;
+        $logoutUrl = $row['logout_url'] ?? null; // expected like https://TENANT/v2/logout
+        $clientId = $row['client_id'] ?? null;
     }
 } catch (Throwable $e) { $logoutUrl = null; }
 
@@ -25,9 +26,11 @@ foreach (['theme','inUseTheme','user_locale','__session'] as $c) {
 
 if ($logoutUrl) {
     $base = getenv('APP_URL') ?: ($_ENV['APP_URL'] ?? 'http://localhost:8081');
-    $redir = rtrim($base, '/') . '/login.php';
+    $returnTo = rtrim($base, '/') . '/login.php';
     $glue = (strpos($logoutUrl, '?') === false) ? '?' : '&';
-    header('Location: ' . $logoutUrl . $glue . 'post_logout_redirect_uri=' . urlencode($redir));
+    $qs = 'returnTo=' . urlencode($returnTo);
+    if (!empty($clientId)) { $qs .= '&client_id=' . rawurlencode($clientId); }
+    header('Location: ' . $logoutUrl . $glue . $qs);
     exit;
 }
 

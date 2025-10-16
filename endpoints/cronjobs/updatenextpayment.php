@@ -20,7 +20,7 @@ while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
     $cycles[$cycleId] = $row;
 }
 
-$query = "SELECT id, next_payment, frequency, cycle FROM subscriptions WHERE next_payment < :currentDate AND auto_renew = 1 AND inactive = 0";
+$query = "SELECT id, next_payment, frequency, cycle FROM subscriptions WHERE next_payment < :currentDate AND auto_renew = TRUE AND inactive = FALSE";
 $stmt = $pdo->prepare($query);
 $stmt->bindValue(':currentDate', $currentDate->format('Y-m-d'));
 $stmt->execute();

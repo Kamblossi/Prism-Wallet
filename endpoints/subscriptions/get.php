@@ -148,7 +148,6 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
       $subscriptions[] = $row;
     }
-  }
 
   foreach ($subscriptions as $subscription) {
     if ($subscription['inactive'] == 1 && isset($settings['hideDisabledSubscriptions']) && $settings['hideDisabledSubscriptions'] === 'true') {

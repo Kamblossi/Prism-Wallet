@@ -85,7 +85,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" || $_SERVER["REQUEST_METHOD"] === "GET
     $monthlyCost = 0;
     $notes = [];
 
-    $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = 0";
+    $sql = "SELECT * FROM subscriptions WHERE user_id = :userId AND inactive = FALSE";
     $stmt = $pdo->prepare($sql);
     $stmt->bindValue(':userId', $userId);
     $stmt->execute();

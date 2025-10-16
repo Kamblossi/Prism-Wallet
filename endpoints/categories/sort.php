@@ -7,7 +7,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     $order = 2;
 
     foreach ($categories as $categoryId) {
-        $sql = "UPDATE categories SET `order` = :order WHERE id = :categoryId AND user_id = :userId";
+        $sql = "UPDATE categories SET \"order\" = :order WHERE id = :categoryId AND user_id = :userId";
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':order', $order, PDO::PARAM_INT);
         $stmt->bindParam(':categoryId', $categoryId, PDO::PARAM_INT);
