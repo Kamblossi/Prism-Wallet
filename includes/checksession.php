@@ -78,14 +78,49 @@ if ($disableAuth && (int)$disableAuth === 1) {
             $stmtTmp->execute([':id' => $userId]);
             $cnt = (int)$stmtTmp->fetchColumn();
         } catch (Throwable $e2) { $cnt = 0; }
+        $preferred = '';
+        if (!empty($userData['firstname'])) {
+            $preferred = trim((string)$userData['firstname']);
+        }
+        if ($preferred === '' && !empty($username)) {
+            $preferred = trim((string)$username);
+        }
+        if ($preferred === '' && !empty($userData['email'])) {
+            $preferred = trim((string)$userData['email']);
+        }
+        if ($preferred === '') {
+            $preferred = 'My';
+        }
+        $householdName = $preferred . "'s Household";
+
         if ($cnt === 0) {
-            $display = trim($username) ? $username : 'My';
-            $name = $display . "'s Household";
             try {
                 $stmt = $pdo->prepare('INSERT INTO household (user_id, name, email) VALUES (:uid, :name, :email)');
-                $stmt->execute([':uid' => $userId, ':name' => $name, ':email' => $userData['email'] ?? null]);
+                $stmt->execute([':uid' => $userId, ':name' => $householdName, ':email' => $userData['email'] ?? null]);
             } catch (Throwable $e) { /* ignore */ }
-        } elseif ($cnt === 1) {
+        } else {
+            try {
+                $stmt = $pdo->prepare('SELECT id, name FROM household WHERE user_id = :uid ORDER BY id ASC LIMIT 1');
+                $stmt->execute([':uid' => $userId]);
+                $primary = $stmt->fetch(PDO::FETCH_ASSOC);
+            } catch (Throwable $e) { $primary = null; }
+
+            if ($primary && isset($primary['id'], $primary['name']) && $primary['name'] !== $householdName) {
+                $legacyNames = [];
+                if (!empty($username)) { $legacyNames[] = trim((string)$username) . "'s Household"; }
+                if (!empty($userData['email'])) { $legacyNames[] = trim((string)$userData['email']) . "'s Household"; }
+                if (!empty($userData['firstname'])) { $legacyNames[] = trim((string)$userData['firstname']) . "'s Household"; }
+
+                if (in_array($primary['name'], $legacyNames, true)) {
+                    try {
+                        $stmt = $pdo->prepare('UPDATE household SET name = :name WHERE id = :id AND user_id = :uid');
+                        $stmt->execute([':name' => $householdName, ':id' => (int)$primary['id'], ':uid' => $userId]);
+                    } catch (Throwable $e) { /* ignore */ }
+                }
+            }
+        }
+
+        if ($cnt === 1) {
             // Provide one extra editable slot for convenience on first run
             try {
                 $stmt = $pdo->prepare('INSERT INTO household (user_id, name, email) VALUES (:uid, :name, :email)');

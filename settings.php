@@ -828,14 +828,14 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
                         <input type="text" name="currency" value="<?= $currency['name'] ?>" placeholder="Currency Name">
                         <input type="text" name="code" value="<?= $currency['code'] ?>" placeholder="Currency Code"
                             <?= !$canDelete ? 'disabled' : '' ?>>
-                        <button class="image-button medium" onClick="editCurrency(<?= $currency['id'] ?>)" name="save"
+                        <button type="button" class="image-button medium" onClick="editCurrency(<?= $currency['id'] ?>).catch(() => {}); return false;" name="save"
                             title="<?= translate('save_currency', $i18n) ?>">
                             <?php include "images/siteicons/svg/save.php"; ?>
                         </button>
                         <?php
                         if ($canDelete) {
                             ?>
-                            <button class="image-button medium" onClick="removeCurrency(<?= $currency['id'] ?>)"
+                            <button type="button" class="image-button medium" onClick="removeCurrency(<?= $currency['id'] ?>); return false;"
                                 title="<?= translate('delete_currency', $i18n) ?>">
                                 <?php include "images/siteicons/svg/delete.php"; ?>
                             </button>
@@ -843,7 +843,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
                         } else {
                             $cantDeleteMessage = $isMainCurrency ? translate('cant_delete_main_currency', $i18n) : translate('cant_delete_currency_in_use', $i18n);
                             ?>
-                            <button class="image-button medium disabled" title="<?= $cantDeleteMessage ?>">
+                            <button type="button" class="image-button medium disabled" title="<?= $cantDeleteMessage ?>">
                                 <?php include "images/siteicons/svg/delete.php"; ?>
                             </button>
                             <?php
@@ -856,8 +856,10 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
                 ?>
             </div>
             <div class="buttons">
+                <input type="submit" value="<?= translate('save', $i18n) ?>" id="saveCurrencies"
+                    onClick="return saveAllCurrencies();" class="thin mobile-grow disabled" disabled />
                 <input type="submit" value="<?= translate('add', $i18n) ?>" id="addCurrency"
-                    onClick="addCurrencyButton()" class="thin mobile-grow" />
+                    onClick="return addCurrencyButton();" class="thin mobile-grow" />
             </div>
             <div class="settings-notes">
                 <p>
@@ -1239,6 +1241,7 @@ $userData['currency_symbol'] = $currencies[$main_currency]['symbol'];
     </section>
 
 </section>
+<script src="scripts/data/currencies.js?<?= $version ?>"></script>
 <script src="scripts/settings.js?<?= $version ?>"></script>
 <script src="scripts/theme.js?<?= $version ?>"></script>
 <script src="scripts/notifications.js?<?= $version ?>"></script>

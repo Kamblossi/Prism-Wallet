@@ -18,6 +18,127 @@ const editSvgContent = `<svg xmlns="http://www.w3.org/2000/svg" fill="none" view
   </g>
 </svg>`;
 
+let currencyOptionMap = null;
+
+function getSaveCurrenciesButton() {
+  return document.getElementById('saveCurrencies');
+}
+
+function markCurrencyDirty(container) {
+  if (!container) return;
+  container.dataset.dirty = '1';
+  updateSaveCurrenciesState();
+}
+
+function clearCurrencyDirty(container) {
+  if (!container) return;
+  if (container.dataset.dirty) {
+    delete container.dataset.dirty;
+  }
+  updateSaveCurrenciesState();
+}
+
+function updateSaveCurrenciesState() {
+  const btn = getSaveCurrenciesButton();
+  if (!btn) return;
+  const hasDirty = !!document.querySelector('#currencies .form-group-inline[data-dirty="1"]');
+  btn.disabled = !hasDirty;
+  btn.classList.toggle('disabled', !hasDirty);
+}
+
+function getCurrencyOptions() {
+  if (Array.isArray(window.PW_CURRENCY_OPTIONS)) {
+    return window.PW_CURRENCY_OPTIONS;
+  }
+  return [];
+}
+
+function bindCurrencyRow(container) {
+  if (!container || container.dataset.currencyBound === '1') {
+    return;
+  }
+  container.dataset.currencyBound = '1';
+  const inputs = container.querySelectorAll('input[name="symbol"], input[name="currency"], input[name="code"]');
+  inputs.forEach((input) => {
+    if (!input) { return; }
+    input.addEventListener('input', () => markCurrencyDirty(container));
+    input.addEventListener('change', () => markCurrencyDirty(container));
+  });
+  const saveButton = container.querySelector('button[name="save"]');
+  if (saveButton) { saveButton.type = 'button'; }
+  const deleteButton = container.querySelector('button[name="delete"]');
+  if (deleteButton) { deleteButton.type = 'button'; }
+}
+
+function getCurrencyOptionMap() {
+  if (!currencyOptionMap) {
+    currencyOptionMap = new Map();
+    getCurrencyOptions().forEach((item) => {
+      if (item && item.code) {
+        currencyOptionMap.set(item.code.toUpperCase(), item);
+      }
+    });
+  }
+  return currencyOptionMap;
+}
+
+function attachCurrencySelect(container, inputSymbol, inputName, inputCode) {
+  if (!container) { return null; }
+  let select = container.querySelector('.currency-select');
+  if (select) { return select; }
+  const options = getCurrencyOptions();
+  if (!options.length) { return null; }
+
+  select = document.createElement('select');
+  select.className = 'currency-select';
+  select.setAttribute('aria-label', translate('currency'));
+
+  const placeholder = document.createElement('option');
+  placeholder.value = '';
+  placeholder.textContent = '-- ' + translate('currency') + ' --';
+  select.appendChild(placeholder);
+
+  options.forEach((item) => {
+    const option = document.createElement('option');
+    option.value = item.code;
+    option.textContent = item.code + ' - ' + item.name;
+    select.appendChild(option);
+  });
+
+  select.addEventListener('change', () => {
+    const selected = getCurrencyOptionMap().get(select.value);
+    if (selected) {
+      if (inputName) { inputName.value = selected.name; }
+      if (inputCode) { inputCode.value = selected.code; }
+    }
+    markCurrencyDirty(container);
+  });
+
+  const insertBeforeNode = inputSymbol || inputName || container.firstChild;
+  container.insertBefore(select, insertBeforeNode);
+
+  if (inputCode && inputCode.value) {
+    const existingCode = inputCode.value.toUpperCase();
+    if (getCurrencyOptionMap().has(existingCode)) {
+      select.value = existingCode;
+    }
+  }
+
+  return select;
+}
+
+function initCurrencySelectors() {
+  const containers = document.querySelectorAll('#currencies .form-group-inline');
+  containers.forEach((container) => {
+    const symbolInput = container.querySelector('input[name="symbol"]');
+    const nameInput = container.querySelector('input[name="currency"]');
+    const codeInput = container.querySelector('input[name="code"]');
+    attachCurrencySelect(container, symbolInput, nameInput, codeInput);
+    bindCurrencyRow(container);
+  });
+  updateSaveCurrenciesState();
+}
+
 function saveBudget() {
   const button = document.getElementById("saveBudgetBtn");
   button.disabled = true;
@@ -363,7 +484,7 @@ function addCurrencyButton(currencyId) {
     })
     .then(responseText => {
       if (responseText !== "Error") {
-        const newCurrencyId = responseText;
+        const newCurrencyId = (responseText || '').trim();
         let container = document.getElementById("currencies");
         let div = document.createElement("div");
         div.className = "form-group-inline";
@@ -380,33 +501,37 @@ function addCurrencyButton(currencyId) {
         inputName.type = "text";
         inputName.placeholder = translate('currency');
         inputName.name = "currency";
-        inputName.value = translate('currency');
+        inputName.value = "";
 
         let inputCode = document.createElement("input");
         inputCode.type = "text";
         inputCode.placeholder = translate('currency_code');
         inputCode.name = "code";
-        inputCode.value = "CODE";
+        inputCode.value = "";
 
         let editLink = document.createElement("button");
-        editLink.className = "image-button medium"
+        editLink.className = "image-button medium";
         editLink.name = "save";
-        editLink.onclick = function () {
-          editCurrency(newCurrencyId);
-        };
+        editLink.type = "button";
+        editLink.addEventListener('click', (event) => {
+          event.preventDefault();
+          editCurrency(newCurrencyId).catch(() => {});
+        });
 
         editLink.innerHTML = editSvgContent;
-        editLink.title = translate('save_member');
+        editLink.title = translate('save_currency');
 
         let deleteLink = document.createElement("button");
-        deleteLink.className = "image-button medium"
+        deleteLink.className = "image-button medium";
         deleteLink.name = "delete";
-        deleteLink.onclick = function () {
+        deleteLink.type = "button";
+        deleteLink.addEventListener('click', (event) => {
+          event.preventDefault();
           removeCurrency(newCurrencyId);
-        };
+        });
 
         deleteLink.innerHTML = deleteSvgContent;
-        deleteLink.title = translate('delete_member');
+        deleteLink.title = translate('delete_currency');
 
         div.appendChild(inputSymbol);
         div.appendChild(inputName);
@@ -415,17 +540,25 @@ function addCurrencyButton(currencyId) {
         div.appendChild(deleteLink);
 
         container.appendChild(div);
+
+        const selector = attachCurrencySelect(div, inputSymbol, inputName, inputCode);
+        bindCurrencyRow(div);
+        if (selector) {
+          selector.focus();
+        }
         showSuccessMessage(translate('success'));
       } else {
         showErrorMessage(translate('error_adding_currency'));
       }
       document.getElementById("addCurrency").disabled = false;
+      updateSaveCurrenciesState();
     })
     .catch(error => {
       showErrorMessage(translate('error_adding_currency'));
       document.getElementById("addCurrency").disabled = false;
+      updateSaveCurrenciesState();
     });
-
+  return false;
 }
 
 function removeCurrency(currencyId) {
@@ -444,6 +577,7 @@ function removeCurrency(currencyId) {
         if (divToRemove) {
           divToRemove.parentNode.removeChild(divToRemove);
         }
+        updateSaveCurrenciesState();
       } else {
         showErrorMessage(data.message || translate('failed_remove_currency'));
       }
@@ -453,43 +587,132 @@ function removeCurrency(currencyId) {
     });
 }
 
-function editCurrency(currencyId) {
-  var saveButton = document.querySelector(`div[data-currencyid="${currencyId}"] button[name="save"]`);
-  var inputSymbolElement = document.querySelector(`div[data-currencyid="${currencyId}"] input[name="symbol"]`);
-  var inputNameElement = document.querySelector(`div[data-currencyid="${currencyId}"] input[name="currency"]`);
-  var inputCodeElement = document.querySelector(`div[data-currencyid="${currencyId}"] input[name="code"]`);
-  saveButton.classList.add("disabled");
-  saveButton.disabled = true;
-  if (inputNameElement) {
-    var currencyName = encodeURIComponent(inputNameElement.value);
-    var currencySymbol = encodeURIComponent(inputSymbolElement.value);
-    var currencyCode = encodeURIComponent(inputCodeElement.value);
-    var url = `endpoints/currency/edit.php?currencyId=${currencyId}&name=${currencyName}&symbol=${currencySymbol}&code=${currencyCode}`;
+function editCurrency(currencyId, options = {}) {
+  const { silent = false } = options;
+  const container = document.querySelector(`div[data-currencyid="${currencyId}"]`);
+  if (!container) {
+    const message = translate('failed_save_currency');
+    if (!silent) { showErrorMessage(message); }
+    return Promise.reject(new Error(message));
+  }
 
-    fetch(url)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(translate('network_response_error'));
+  const saveButton = container.querySelector(`button[name="save"]`);
+  const inputSymbolElement = container.querySelector(`input[name="symbol"]`);
+  const inputNameElement = container.querySelector(`input[name="currency"]`);
+  const inputCodeElement = container.querySelector(`input[name="code"]`);
+
+  const symbol = inputSymbolElement ? inputSymbolElement.value.trim() : '';
+  const name = inputNameElement ? inputNameElement.value.trim() : '';
+  const code = inputCodeElement ? inputCodeElement.value.trim().toUpperCase() : '';
+
+  if (!symbol || !name || !code) {
+    const message = translate('fill_all_fields');
+    if (!silent) { showErrorMessage(message); }
+    if (inputNameElement && !name) { inputNameElement.focus(); }
+    else if (inputCodeElement && !code) { inputCodeElement.focus(); }
+    return Promise.reject(new Error(message));
+  }
+
+  if (inputCodeElement) {
+    inputCodeElement.value = code;
+  }
+
+  if (saveButton) {
+    saveButton.classList.add("disabled");
+    saveButton.disabled = true;
+  }
+
+  const params = new URLSearchParams({
+    currencyId: String(currencyId),
+    name,
+    symbol,
+    code
+  });
+
+  return fetch(`endpoints/currency/edit.php?${params.toString()}`)
+    .then(response => response.json().catch(() => null).then(data => ({ response, data })))
+    .then(({ response, data }) => {
+      if (response.ok && data && data.success) {
+        if (!silent) {
+          showSuccessMessage(data.message || translate('success'));
         }
-        return response.json();
-      })
-      .then(data => {
-        if (data.success) {
-          saveButton.classList.remove("disabled");
-          saveButton.disabled = false;
-          showSuccessMessage(decodeURI(data.message));
-        } else {
-          saveButton.classList.remove("disabled");
-          saveButton.disabled = false;
-          showErrorMessage(data.message || translate('failed_save_currency'));
-        }
-      })
-      .catch(error => {
+        clearCurrencyDirty(container);
+        return data;
+      }
+      const message = (data && data.message) ? data.message : translate('failed_save_currency');
+      if (!silent) {
+        showErrorMessage(message);
+      }
+      throw new Error(message);
+    })
+    .catch(error => {
+      if (!silent && !error.message) {
+        showErrorMessage(translate('failed_save_currency'));
+      }
+      throw error;
+    })
+    .finally(() => {
+      if (saveButton) {
         saveButton.classList.remove("disabled");
         saveButton.disabled = false;
-        showErrorMessage(error.message || translate('failed_save_currency'));
-      });
+      }
+    });
+}
+
+function saveAllCurrencies() {
+  const saveBtn = getSaveCurrenciesButton();
+  if (!saveBtn || saveBtn.disabled) {
+    return false;
   }
+  const dirtyRows = Array.from(document.querySelectorAll('#currencies .form-group-inline[data-currencyid][data-dirty="1"]'));
+  if (dirtyRows.length === 0) {
+    return false;
+  }
+
+  for (const row of dirtyRows) {
+    const id = parseInt(row.dataset.currencyid, 10);
+    if (!Number.isFinite(id)) {
+      showErrorMessage(translate('failed_save_currency'));
+      return false;
+    }
+    const symbolInput = row.querySelector('input[name="symbol"]');
+    const nameInput = row.querySelector('input[name="currency"]');
+    const codeInput = row.querySelector('input[name="code"]');
+    const symbol = symbolInput ? symbolInput.value.trim() : '';
+    const name = nameInput ? nameInput.value.trim() : '';
+    const code = codeInput ? codeInput.value.trim() : '';
+    if (!symbol || !name || !code) {
+      showErrorMessage(translate('fill_all_fields'));
+      if (nameInput && !name) { nameInput.focus(); }
+      else if (codeInput && !code) { codeInput.focus(); }
+      return false;
+    }
+  }
+
+  saveBtn.disabled = true;
+  saveBtn.classList.add('disabled');
+
+  const saves = dirtyRows.map((row) => {
+    const id = parseInt(row.dataset.currencyid, 10);
+    return editCurrency(id, { silent: true });
+  });
+
+  Promise.allSettled(saves)
+    .then((results) => {
+      const failed = results.filter(result => result.status === 'rejected');
+      if (failed.length === 0) {
+        showSuccessMessage(translate('success'));
+      } else {
+        const reason = failed[0].reason;
+        const message = (reason && reason.message) ? reason.message : translate('failed_save_currency');
+        showErrorMessage(message);
+      }
+    })
+    .finally(() => {
+      updateSaveCurrenciesState();
+    });
+
+  return false;
 }
 
 function togglePayment(paymentId) {
@@ -800,6 +1023,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
+document.addEventListener('DOMContentLoaded', function () {
+  initCurrencySelectors();
+});
+
 function storeSettingsOnDB(endpoint, value) {
   fetch('endpoints/settings/' + endpoint + '.php', {
     method: 'POST',
@@ -994,4 +1221,9 @@ function runAiRecommendations() {
     });
 
 }
+
+
+
+
+
 
