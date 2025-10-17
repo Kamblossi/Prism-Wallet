@@ -1,0 +1,38 @@
+# Render Blueprint for Prism Wallet
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: prism-wallet
+    env: docker
+    plan: starter # adjust as needed
+    autoDeploy: true
+    healthCheckPath: /health.php
+    envVars:
+      - key: APP_URL
+        value: https://prism-wallet.app
+      - key: AUTH_PROVIDER
+        value: local
+      - key: TZ
+        value: Africa/Nairobi
+      # Prefer DATABASE_URL from Supabase; leave below unset to use DATABASE_URL only
+      # - key: DB_HOST
+      #   value: your-db-host
+      # - key: DB_PORT
+      #   value: 5432
+      # - key: DB_NAME
+      #   value: prism_wallet_prod
+      # - key: DB_USER
+      #   value: postgres
+      # - key: DB_PASSWORD
+      #   value: ""
+      - key: DATABASE_URL
+        sync: false # set in Render dashboard with your Supabase connection string
+      - key: DB_SSLMODE
+        value: require
+      - key: DB_DISABLE_HOSTADDR
+        value: "1"
+    disk:
+      name: uploads
+      mountPath: /var/www/html/images/uploads/logos
+      sizeGB: 1
