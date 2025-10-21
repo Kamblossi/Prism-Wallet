@@ -22,25 +22,52 @@ chown -R www-data:www-data /var/www/html || true
 chown -R www-data:www-data /tmp || true
 chmod -R 770 /tmp || true
 
-# Resolve postgres hostname and add to /etc/hosts for libpq compatibility
-# This MUST happen after user setup but BEFORE PHP-FPM starts
-# Try both service name and container name
-POSTGRES_IP=$(getent hosts prism-wallet-postgres | awk '{ print $1 }' | head -1)
-if [ -z "$POSTGRES_IP" ]; then
-    POSTGRES_IP=$(getent hosts postgres | awk '{ print $1 }' | head -1)
+## Resolve postgres hostname and add to /etc/hosts for libpq compatibility
+## This MUST happen after user setup but BEFORE PHP-FPM starts
+## Use DB_HOST env var if provided, otherwise try known service/container names
+
+# Allow runtime override from environment
+DB_HOST=${DB_HOST:-}
+
+if [ -n "$DB_HOST" ]; then
+  echo "DB_HOST explicitly set to: $DB_HOST"
+else
+  # prefer service name defined in docker-compose
+  DB_HOST=prism-wallet-postgres
 fi
 
+# Try to resolve the DB_HOST, retry a few times to allow DNS to settle
+POSTGRES_IP=""
+for try in 1 2 3 4 5; do
+  echo "Attempting to resolve DB host '$DB_HOST' (attempt $try/5)"
+  POSTGRES_IP=$(getent hosts "$DB_HOST" 2>/dev/null | awk '{ print $1 }' | head -1 || true)
+  if [ -n "$POSTGRES_IP" ]; then
+    echo "Resolved $DB_HOST -> $POSTGRES_IP"
+    break
+  fi
+  # also attempt plain 'postgres' as a fallback
+  POSTGRES_IP=$(getent hosts postgres 2>/dev/null | awk '{ print $1 }' | head -1 || true)
+  if [ -n "$POSTGRES_IP" ]; then
+    echo "Resolved fallback 'postgres' -> $POSTGRES_IP"
+    DB_HOST=postgres
+    break
+  fi
+  sleep 1
+done
+
 if [ -n "$POSTGRES_IP" ]; then
-    echo "Adding postgres hostnames ($POSTGRES_IP) to /etc/hosts for PHP PDO compatibility"
-    echo "$POSTGRES_IP postgres" >> /etc/hosts
-    echo "$POSTGRES_IP prism-wallet-postgres" >> /etc/hosts
-    
-    # Also save the IP to a file that PHP can read
-    echo "$POSTGRES_IP" > /tmp/postgres_ip.txt
-    chown www-data:www-data /tmp/postgres_ip.txt
-    echo "Saved postgres IP to /tmp/postgres_ip.txt"
+  echo "Adding postgres hostnames ($POSTGRES_IP) to /etc/hosts for PHP PDO compatibility"
+  # Avoid duplicating entries (match IP followed by hostname)
+  grep -q -E "^${POSTGRES_IP}[[:space:]]+postgres([[:space:]]|$)" /etc/hosts 2>/dev/null || echo "$POSTGRES_IP postgres" >> /etc/hosts
+  grep -q -E "^${POSTGRES_IP}[[:space:]]+prism-wallet-postgres([[:space:]]|$)" /etc/hosts 2>/dev/null || echo "$POSTGRES_IP prism-wallet-postgres" >> /etc/hosts
+
+  # Also save the IP to a file that PHP can read
+  echo "$POSTGRES_IP" > /tmp/postgres_ip.txt
+  chown www-data:www-data /tmp/postgres_ip.txt || true
+  echo "Saved postgres IP to /tmp/postgres_ip.txt"
 else
-    echo "Warning: Could not resolve postgres hostname"
+  echo "Warning: Could not resolve postgres hostname after retries. DB_HOST is set to '$DB_HOST'"
+  echo "If you rely on DNS-based resolution, ensure the DB service is reachable or set DB_HOST env var to the IP or host name."
 fi
 
 # PIDs we’ll track
