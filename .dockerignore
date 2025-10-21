@@ -8,3 +8,4 @@
 *.md
 .gitignore
 .dockerignore
+.env

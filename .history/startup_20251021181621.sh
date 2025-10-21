@@ -57,9 +57,9 @@ done
 
 if [ -n "$POSTGRES_IP" ]; then
   echo "Adding postgres hostnames ($POSTGRES_IP) to /etc/hosts for PHP PDO compatibility"
-  # Avoid duplicating entries (match IP followed by hostname)
-  grep -q -E "^${POSTGRES_IP}[[:space:]]+postgres([[:space:]]|$)" /etc/hosts 2>/dev/null || echo "$POSTGRES_IP postgres" >> /etc/hosts
-  grep -q -E "^${POSTGRES_IP}[[:space:]]+prism-wallet-postgres([[:space:]]|$)" /etc/hosts 2>/dev/null || echo "$POSTGRES_IP prism-wallet-postgres" >> /etc/hosts
+  # Avoid duplicating entries
+  grep -qE "^$POSTGRES_IP\s+postgres(\s|")?" /etc/hosts 2>/dev/null || echo "$POSTGRES_IP postgres" >> /etc/hosts
+  grep -qE "^$POSTGRES_IP\s+prism-wallet-postgres(\s|")?" /etc/hosts 2>/dev/null || echo "$POSTGRES_IP prism-wallet-postgres" >> /etc/hosts
 
   # Also save the IP to a file that PHP can read
   echo "$POSTGRES_IP" > /tmp/postgres_ip.txt
@@ -179,34 +179,6 @@ echo "Starting Nginx"
 echo "==================================="
 # Final nginx config check before starting
 echo "Running final nginx configuration test..."
-
-# If platform provides a dynamic PORT (e.g., Render), update nginx to listen on that port
-if [ -n "${PORT:-}" ]; then
-  echo "Detected platform PORT=${PORT}; patching nginx listen directives to $PORT"
-  for conf in /etc/nginx/nginx.conf /etc/nginx/conf.d/*.conf /etc/nginx/http.d/*.conf; do
-    [ -f "$conf" ] || continue
-
-    tmp_conf=$(mktemp) || { echo "Failed to create temp file while adjusting $conf" >&2; continue; }
-    if awk -v port="${PORT}" '
-      {
-        if ($0 ~ /listen[[:space:]]*\[::\]:[0-9]+/) {
-          gsub(/listen[[:space:]]*\[::\]:[0-9]+/, "listen [::]:" port);
-        }
-        if ($0 ~ /listen[[:space:]]+[0-9]+[[:space:];]/) {
-          gsub(/listen[[:space:]]+[0-9]+/, "listen " port);
-        }
-        print;
-      }
-    ' "$conf" > "${tmp_conf}"; then
-      mv "${tmp_conf}" "$conf"
-      echo "  Patched $conf"
-    else
-      echo "  Warning: failed to adjust $conf; leaving original in place" >&2
-      rm -f "${tmp_conf}"
-    fi
-  done
-  echo "Patched Nginx configs to listen on port ${PORT}"
-fi
 if nginx -t 2>&1; then
   echo "✓ Nginx configuration is valid"
 else

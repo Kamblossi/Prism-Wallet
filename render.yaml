@@ -7,10 +7,10 @@ services:
     env: docker
     plan: starter # adjust as needed
     autoDeploy: true
-    healthCheckPath: /health.php
+    healthCheckPath: /healthz.php
     envVars:
       - key: APP_URL
-        value: https://prism-wallet.app
+        value: https://CHANGE-ME.onrender.com
       - key: AUTH_PROVIDER
         value: local
       - key: TZ

@@ -185,25 +185,10 @@ if [ -n "${PORT:-}" ]; then
   echo "Detected platform PORT=${PORT}; patching nginx listen directives to $PORT"
   for conf in /etc/nginx/nginx.conf /etc/nginx/conf.d/*.conf /etc/nginx/http.d/*.conf; do
     [ -f "$conf" ] || continue
-
-    tmp_conf=$(mktemp) || { echo "Failed to create temp file while adjusting $conf" >&2; continue; }
-    if awk -v port="${PORT}" '
-      {
-        if ($0 ~ /listen[[:space:]]*\[::\]:[0-9]+/) {
-          gsub(/listen[[:space:]]*\[::\]:[0-9]+/, "listen [::]:" port);
-        }
-        if ($0 ~ /listen[[:space:]]+[0-9]+[[:space:];]/) {
-          gsub(/listen[[:space:]]+[0-9]+/, "listen " port);
-        }
-        print;
-      }
-    ' "$conf" > "${tmp_conf}"; then
-      mv "${tmp_conf}" "$conf"
-      echo "  Patched $conf"
-    else
-      echo "  Warning: failed to adjust $conf; leaving original in place" >&2
-      rm -f "${tmp_conf}"
-    fi
+    # Replace IPv6 listen directive
+    sed -i -E "s/listen[[:space:]]+\[::\]:80/listen [::]:${PORT}/g" "$conf" || true
+    # Replace IPv4 listen directives
+    sed -i -E "s/listen[[:space:]]+80/listen ${PORT}/g" "$conf" || true
   done
   echo "Patched Nginx configs to listen on port ${PORT}"
 fi
