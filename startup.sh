@@ -179,6 +179,19 @@ echo "Starting Nginx"
 echo "==================================="
 # Final nginx config check before starting
 echo "Running final nginx configuration test..."
+
+# If platform provides a dynamic PORT (e.g., Render), update nginx to listen on that port
+if [ -n "${PORT:-}" ]; then
+  echo "Detected platform PORT=${PORT}; patching nginx listen directives to $PORT"
+  for conf in /etc/nginx/nginx.conf /etc/nginx/conf.d/*.conf /etc/nginx/http.d/*.conf; do
+    [ -f "$conf" ] || continue
+    # Replace IPv6 listen directive
+    sed -i -E "s/listen[[:space:]]+\[::\]:80/listen [::]:${PORT}/g" "$conf" || true
+    # Replace IPv4 listen directives
+    sed -i -E "s/listen[[:space:]]+80/listen ${PORT}/g" "$conf" || true
+  done
+  echo "Patched Nginx configs to listen on port ${PORT}"
+fi
 if nginx -t 2>&1; then
   echo "✓ Nginx configuration is valid"
 else
