@@ -2,6 +2,15 @@
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
+function env_value($value): ?string
+{
+    if ($value === null || $value === false) {
+        return null;
+    }
+    $trimmed = trim((string) $value);
+    return $trimmed === '' ? null : $trimmed;
+}
+
 // Load .env if present; in many PaaS envs variables are injected directly
 try {
     if (file_exists(__DIR__ . '/../.env')) {
@@ -13,17 +22,17 @@ try {
 }
 
 // Prefer a single DATABASE_URL when provided (e.g. postgres://user:pass@host:5432/db?sslmode=require)
-$databaseUrl = $_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL') ?? null;
+$databaseUrl = env_value($_ENV['DATABASE_URL'] ?? getenv('DATABASE_URL') ?? null);
 
 // Support both .env file and Docker environment variables
-$host = $_ENV['DB_HOST'] ?? getenv('DB_HOST') ?? null;
-$port = $_ENV['DB_PORT'] ?? getenv('DB_PORT') ?? null;
-$dbname = $_ENV['DB_DATABASE'] ?? $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?? null;
-$user = $_ENV['DB_USERNAME'] ?? $_ENV['DB_USER'] ?? getenv('DB_USER') ?? null;
-$password = $_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?? null;
+$host = env_value($_ENV['DB_HOST'] ?? getenv('DB_HOST') ?? null);
+$port = env_value($_ENV['DB_PORT'] ?? getenv('DB_PORT') ?? null);
+$dbname = env_value($_ENV['DB_DATABASE'] ?? $_ENV['DB_NAME'] ?? getenv('DB_NAME') ?? null);
+$user = env_value($_ENV['DB_USERNAME'] ?? $_ENV['DB_USER'] ?? getenv('DB_USER') ?? null);
+$password = env_value($_ENV['DB_PASSWORD'] ?? getenv('DB_PASSWORD') ?? null);
 
 // SSL mode for managed Postgres (Supabase/Neon commonly require this)
-$sslmode = $_ENV['DB_SSLMODE'] ?? getenv('DB_SSLMODE') ?? null;
+$sslmode = env_value($_ENV['DB_SSLMODE'] ?? getenv('DB_SSLMODE') ?? null);
 
 // If DATABASE_URL exists, parse it to populate missing pieces
 if ($databaseUrl) {

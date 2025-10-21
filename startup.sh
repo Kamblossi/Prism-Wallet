@@ -181,34 +181,15 @@ echo "==================================="
 echo "Running final nginx configuration test..."
 
 # If platform provides a dynamic PORT (e.g., Render), update nginx to listen on that port
-if [ -n "${PORT:-}" ]; then
-  echo "Detected platform PORT=${PORT}; patching nginx listen directives to $PORT"
-  for conf in /etc/nginx/nginx.conf /etc/nginx/conf.d/*.conf /etc/nginx/http.d/*.conf; do
-    [ -f "$conf" ] || continue
-
-    tmp_conf=$(mktemp) || { echo "Failed to create temp file while adjusting $conf" >&2; continue; }
-    if awk -v port="${PORT}" '
-      {
-        if ($0 ~ /listen[[:space:]]*\[::\]:[0-9]+/) {
-          sub(/\[::\]:[0-9]+/, "[::]:" port);
-        } else if ($0 ~ /listen[[:space:]]+[0-9]+([[:space:];]|$)/) {
-          sub(/listen[[:space:]]+[0-9]+/, "listen " port);
-          if ($0 !~ /;/) {
-            $0 = $0 ";"
-          }
-        }
-        print;
-      }
-    ' "$conf" > "${tmp_conf}"; then
-      mv "${tmp_conf}" "$conf"
-      echo "  Patched $conf"
-    else
-      echo "  Warning: failed to adjust $conf; leaving original in place" >&2
-      rm -f "${tmp_conf}"
-    fi
-  done
-  echo "Patched Nginx configs to listen on port ${PORT}"
-fi
+NGINX_PORT="${PORT:-80}"
+echo "Configuring Nginx to listen on port ${NGINX_PORT}"
+for conf in /etc/nginx/nginx.conf /etc/nginx/conf.d/*.conf /etc/nginx/http.d/*.conf; do
+  [ -f "$conf" ] || continue
+  if grep -q "__PORT__" "$conf"; then
+    sed -i "s/__PORT__/${NGINX_PORT}/g" "$conf"
+    echo "  Injected port into $conf"
+  fi
+done
 if nginx -t 2>&1; then
   echo "✓ Nginx configuration is valid"
 else
@@ -225,6 +206,21 @@ touch ~/startup.txt
 
 # Wait one second before running scripts
 sleep 1
+
+# Quick self-check: ensure Nginx is reachable on the configured port
+if [ -n "${NGINX_PORT:-}" ]; then
+  echo "Probing http://127.0.0.1:${NGINX_PORT}/healthz.php ..."
+  if curl -fsS "http://127.0.0.1:${NGINX_PORT}/healthz.php" >/dev/null 2>&1; then
+    echo "✓ Local HTTP probe succeeded on port ${NGINX_PORT}"
+  else
+    echo "!- WARNING: Local HTTP probe failed on port ${NGINX_PORT}"
+    echo "Active listeners (best effort):"
+    (command -v ss >/dev/null 2>&1 && ss -tlnp) || (command -v netstat >/dev/null 2>&1 && netstat -tlnp) || echo "ss/netstat not available"
+    echo "--- nginx -T (config dump) ---"
+    nginx -T 2>&1 | sed -n '1,120p'
+    echo "--- end nginx -T ---"
+  fi
+fi
 
 echo "==================================="
 echo "Running Initialization Tasks"

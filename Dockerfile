@@ -52,8 +52,9 @@ RUN dos2unix /etc/cron.d/cronjobs && \
     echo 'pm.max_requests = 500' >> /usr/local/etc/php-fpm.d/zz-docker.conf && \
     echo 'clear_env = no' >> /usr/local/etc/php-fpm.d/zz-docker.conf
 
-# Expose port 80 for Nginx
-EXPOSE 80
+# Expose common ports for PaaS detection
+# Render typically provides $PORT (defaults to 10000)
+EXPOSE 80 10000
 
 ENTRYPOINT ["dumb-init", "--"]
 
