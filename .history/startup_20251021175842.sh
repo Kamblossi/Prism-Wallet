@@ -102,85 +102,40 @@ fi
 echo ""
 
 # Start both PHP-FPM and Nginx
-echo "==================================="
-echo "Starting PHP-FPM"
-echo "==================================="
+echo "Launching php-fpm"
 php-fpm -F &
 PHP_FPM_PID=$!
-echo "✓ PHP-FPM started with PID: $PHP_FPM_PID"
-echo ""
 
-echo "==================================="
-echo "Waiting for PHP-FPM to Listen"
-echo "==================================="
+echo "Waiting for php-fpm to accept connections on 127.0.0.1:9000"
 if command -v php >/dev/null 2>&1; then
   for i in $(seq 1 20); do
     if php -r '$s=@fsockopen("127.0.0.1",9000,$e,$str,1); if ($s) { fclose($s); exit(0);} exit(1);'; then
-      echo "✓ PHP-FPM is ready and accepting connections on 127.0.0.1:9000"
+      echo "php-fpm is ready"
       break
     fi
-    if [ $i -eq 20 ]; then
-      echo "✗ WARNING: PHP-FPM did not respond after 20 attempts (10 seconds)"
-      echo "Checking if process is still running..."
-      if kill -0 $PHP_FPM_PID 2>/dev/null; then
-        echo "  PHP-FPM process is alive but not responding on port 9000"
-      else
-        echo "  ✗ PHP-FPM process has died! Check logs above."
-      fi
-      echo "Continuing anyway..."
-    fi
-    echo "  Waiting for php-fpm... (attempt $i/20)"
+    echo "php-fpm not ready yet; retrying... ($i)"
     sleep 0.5
   done
 else
-  echo "⚠ php CLI not found — skipping active wait for php-fpm"
-  echo "  Waiting 2 seconds for PHP-FPM to start..."
-  sleep 2
+  echo "php CLI not found — skipping active wait for php-fpm"
+  sleep 1
 fi
-echo ""
 
-echo "==================================="
-echo "Starting Crond"
-echo "==================================="
+echo "Launching crond"
 crond -f &
 CROND_PID=$!
-echo "✓ Crond started with PID: $CROND_PID"
-echo ""
 
-echo "==================================="
-echo "Starting Nginx"
-echo "==================================="
-# Final nginx config check before starting
-echo "Running final nginx configuration test..."
-if nginx -t 2>&1; then
-  echo "✓ Nginx configuration is valid"
-else
-  echo "✗ ERROR: Nginx configuration test failed!"
-  echo "This will likely cause Nginx to fail to start."
-fi
-
+echo "Launching nginx"
 nginx -g 'daemon off;' &
 NGINX_PID=$!
-echo "✓ Nginx started with PID: $NGINX_PID"
-echo ""
 
 touch ~/startup.txt
 
 # Wait one second before running scripts
 sleep 1
 
-echo "==================================="
-echo "Running Initialization Tasks"
-echo "==================================="
-
 # Perform database migrations for PostgreSQL
-echo "Running database migrations..."
-if /usr/local/bin/php /var/www/html/endpoints/db/migrate.php 2>&1 | tee -a /var/log/startup.log; then
-  echo "✓ Database migrations completed"
-else
-  echo "⚠ Database migration returned non-zero exit code (may be expected if DB not ready)"
-fi
-echo ""
+/usr/local/bin/php /var/www/html/endpoints/db/migrate.php
 
 mkdir -p /var/www/html/images/uploads/logos/avatars
 
@@ -200,21 +155,7 @@ crontab -d -u root 2>/dev/null || true
 # /usr/local/bin/php /var/www/html/endpoints/cronjobs/updateexchange.php
 
 # Run checkforupdates.php (non-fatal)
-echo "Running checkforupdates.php..."
-/usr/local/bin/php /var/www/html/endpoints/cronjobs/checkforupdates.php || echo "⚠ checkforupdates.php failed (non-fatal)" | tee -a /var/log/startup.log
-
-echo ""
-echo "==================================="
-echo "Startup Complete - Services Running"
-echo "==================================="
-echo "PHP-FPM PID: $PHP_FPM_PID"
-echo "Nginx PID:   $NGINX_PID"
-echo "Crond PID:   $CROND_PID"
-echo "==================================="
-echo "Container is ready to serve traffic"
-echo "Logs: /var/log/startup.log"
-echo "==================================="
-echo ""
+/usr/local/bin/php /var/www/html/endpoints/cronjobs/checkforupdates.php || echo "checkforupdates.php failed" >> /var/log/startup.log
 
 # Essentially wait until all child processes exit
 wait

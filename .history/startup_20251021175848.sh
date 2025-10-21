@@ -200,21 +200,7 @@ crontab -d -u root 2>/dev/null || true
 # /usr/local/bin/php /var/www/html/endpoints/cronjobs/updateexchange.php
 
 # Run checkforupdates.php (non-fatal)
-echo "Running checkforupdates.php..."
-/usr/local/bin/php /var/www/html/endpoints/cronjobs/checkforupdates.php || echo "⚠ checkforupdates.php failed (non-fatal)" | tee -a /var/log/startup.log
-
-echo ""
-echo "==================================="
-echo "Startup Complete - Services Running"
-echo "==================================="
-echo "PHP-FPM PID: $PHP_FPM_PID"
-echo "Nginx PID:   $NGINX_PID"
-echo "Crond PID:   $CROND_PID"
-echo "==================================="
-echo "Container is ready to serve traffic"
-echo "Logs: /var/log/startup.log"
-echo "==================================="
-echo ""
+/usr/local/bin/php /var/www/html/endpoints/cronjobs/checkforupdates.php || echo "checkforupdates.php failed" >> /var/log/startup.log
 
 # Essentially wait until all child processes exit
 wait

@@ -139,48 +139,21 @@ else
 fi
 echo ""
 
-echo "==================================="
-echo "Starting Crond"
-echo "==================================="
+echo "Launching crond"
 crond -f &
 CROND_PID=$!
-echo "✓ Crond started with PID: $CROND_PID"
-echo ""
 
-echo "==================================="
-echo "Starting Nginx"
-echo "==================================="
-# Final nginx config check before starting
-echo "Running final nginx configuration test..."
-if nginx -t 2>&1; then
-  echo "✓ Nginx configuration is valid"
-else
-  echo "✗ ERROR: Nginx configuration test failed!"
-  echo "This will likely cause Nginx to fail to start."
-fi
-
+echo "Launching nginx"
 nginx -g 'daemon off;' &
 NGINX_PID=$!
-echo "✓ Nginx started with PID: $NGINX_PID"
-echo ""
 
 touch ~/startup.txt
 
 # Wait one second before running scripts
 sleep 1
 
-echo "==================================="
-echo "Running Initialization Tasks"
-echo "==================================="
-
 # Perform database migrations for PostgreSQL
-echo "Running database migrations..."
-if /usr/local/bin/php /var/www/html/endpoints/db/migrate.php 2>&1 | tee -a /var/log/startup.log; then
-  echo "✓ Database migrations completed"
-else
-  echo "⚠ Database migration returned non-zero exit code (may be expected if DB not ready)"
-fi
-echo ""
+/usr/local/bin/php /var/www/html/endpoints/db/migrate.php
 
 mkdir -p /var/www/html/images/uploads/logos/avatars
 
@@ -200,21 +173,7 @@ crontab -d -u root 2>/dev/null || true
 # /usr/local/bin/php /var/www/html/endpoints/cronjobs/updateexchange.php
 
 # Run checkforupdates.php (non-fatal)
-echo "Running checkforupdates.php..."
-/usr/local/bin/php /var/www/html/endpoints/cronjobs/checkforupdates.php || echo "⚠ checkforupdates.php failed (non-fatal)" | tee -a /var/log/startup.log
-
-echo ""
-echo "==================================="
-echo "Startup Complete - Services Running"
-echo "==================================="
-echo "PHP-FPM PID: $PHP_FPM_PID"
-echo "Nginx PID:   $NGINX_PID"
-echo "Crond PID:   $CROND_PID"
-echo "==================================="
-echo "Container is ready to serve traffic"
-echo "Logs: /var/log/startup.log"
-echo "==================================="
-echo ""
+/usr/local/bin/php /var/www/html/endpoints/cronjobs/checkforupdates.php || echo "checkforupdates.php failed" >> /var/log/startup.log
 
 # Essentially wait until all child processes exit
 wait

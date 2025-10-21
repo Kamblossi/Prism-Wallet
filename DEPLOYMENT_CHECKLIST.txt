@@ -1,0 +1,129 @@
+╔══════════════════════════════════════════════════════════════════╗
+║                  PRISM WALLET DEPLOYMENT CHECKLIST               ║
+╚══════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────┐
+│ ✅ PRE-DEPLOYMENT (Run Locally First)                            │
+└──────────────────────────────────────────────────────────────────┘
+
+  □  Run validation script:
+     ./validate-deployment.sh
+
+  □  Verify output shows:
+     ✓ Nginx configuration is valid
+     ✓ PHP-FPM configuration is valid
+     ✓ PHP-FPM is ready and accepting connections
+     ✓ Health endpoint responded
+
+  □  If errors, run diagnostics:
+     docker exec <container> /usr/local/bin/debug-startup.sh
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 📋 CONFIGURATION VERIFIED                                         │
+└──────────────────────────────────────────────────────────────────┘
+
+  ✅ PHP-FPM listens on:     127.0.0.1:9000
+  ✅ Nginx fastcgi_pass:     127.0.0.1:9000
+  ✅ No hostname references: (no "php-fpm:9000")
+  ✅ Enhanced startup logs:  Clear success/error messages
+  ✅ Debug tools included:   /usr/local/bin/debug-startup.sh
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 🚀 DEPLOYMENT TO RENDER                                          │
+└──────────────────────────────────────────────────────────────────┘
+
+  1. Commit changes:
+     git add .
+     git commit -m "Enhanced deployment logging and validation"
+     git push origin main
+
+  2. Monitor Render logs for:
+     ===================================
+     Prism Wallet Container Starting
+     ===================================
+     ✓ PHP-FPM is ready and accepting connections
+     ✓ Nginx started
+     ===================================
+     Startup Complete - Services Running
+     ===================================
+
+  3. Verify health:
+     curl https://your-app.onrender.com/health.php
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 🔍 TROUBLESHOOTING QUICK REFERENCE                               │
+└──────────────────────────────────────────────────────────────────┘
+
+  ERROR: "host not found in upstream 'php-fpm'"
+  → Check nginx configs use 127.0.0.1:9000 (not php-fpm:9000)
+
+  ERROR: "PHP-FPM configuration test failed"
+  → Check www.conf is copied to /usr/local/etc/php-fpm.d/
+  → Run: docker exec <container> php-fpm -t
+
+  ERROR: "PHP-FPM process has died"
+  → Check PHP extensions loaded correctly
+  → Check file permissions (www-data ownership)
+
+  ERROR: "Exited with status 2"
+  → Look at logs BEFORE the exit for actual error
+  → Run debug script: /usr/local/bin/debug-startup.sh
+
+  WARNING: "Database migration failed"
+  → Usually non-fatal if DB not ready yet
+  → App should retry connections automatically
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 📁 QUICK COMMANDS                                                │
+└──────────────────────────────────────────────────────────────────┘
+
+  Local validation:
+    ./validate-deployment.sh
+
+  Build and run manually:
+    docker build -t prism-wallet:test .
+    docker run -d -p 8080:80 \
+      -e DB_HOST=localhost -e DB_PORT=5432 \
+      -e DB_NAME=test -e DB_USER=test -e DB_PASSWORD=test \
+      -e AUTH_PROVIDER=local -e APP_URL=http://localhost:8080 \
+      --name prism-test prism-wallet:test
+
+  Watch logs:
+    docker logs -f prism-test
+
+  Run diagnostics:
+    docker exec prism-test /usr/local/bin/debug-startup.sh
+
+  Test health:
+    curl http://localhost:8080/health.php
+
+  Cleanup:
+    docker stop prism-test && docker rm prism-test
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 📚 DOCUMENTATION FILES                                           │
+└──────────────────────────────────────────────────────────────────┘
+
+  TEST_SUMMARY.md         - Quick overview and status
+  DEPLOYMENT_TESTING.md   - Complete testing guide
+  validate-deployment.sh  - Automated validation script
+  debug-startup.sh        - In-container diagnostics
+
+┌──────────────────────────────────────────────────────────────────┐
+│ 💡 SUCCESS INDICATORS                                            │
+└──────────────────────────────────────────────────────────────────┘
+
+  Local Test Success:
+    ✓ All validation steps pass
+    ✓ Health endpoint returns 200 OK
+    ✓ No errors in startup logs
+
+  Render Deployment Success:
+    ✓ Build completes without errors
+    ✓ Startup logs show "Services Running"
+    ✓ Health check passes
+    ✓ Application responds to requests
+
+╔══════════════════════════════════════════════════════════════════╗
+║  Ready to test? Run: ./validate-deployment.sh                   ║
+╚══════════════════════════════════════════════════════════════════╝
