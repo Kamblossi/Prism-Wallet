@@ -22,15 +22,15 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
     }
 
     foreach ($payments as $payment) {
-        // Compute icon URL: built-ins are local relative paths; customs via storage
-        $iconUrl = $payment['icon'];
-        if (strpos($iconUrl, 'images/uploads/icons/') === 0) {
-            // keep as-is
+        // Built-in icons remain local path; custom icons go through storage helper
+        $iconVal = $payment['icon'];
+        if (strpos($iconVal, 'images/uploads/icons/') !== false) {
+            $paymentIconFolder = '';
         } else {
-            $iconFile = basename($iconUrl);
-            $iconUrl = (storage_driver() === 'supabase')
-                ? storage_public_url('logos/' . $iconFile)
-                : ('images/uploads/logos/' . $iconFile);
+            $paymentIconFolder = (storage_driver() === 'supabase') ? '' : 'images/uploads/logos/';
+            if (storage_driver() === 'supabase') {
+                $iconVal = storage_public_url('logos/' . basename($iconVal));
+            }
         }
         $inUse = in_array($payment['id'], $paymentsInUse);
         ?>
@@ -38,7 +38,7 @@ if (isset($_SESSION['loggedin']) && $_SESSION['loggedin'] === true) {
             data-paymentid="<?= $payment['id'] ?>"
             title="<?= $inUse ? translate('cant_delete_payment_method_in_use', $i18n) : ($payment['enabled'] ? translate('disable', $i18n) : translate('enable', $i18n)) ?>"
             onClick="togglePayment(<?= $payment['id'] ?>)">
-            <img src="<?= $iconUrl ?>" alt="Logo" />
+            <img src="<?= $paymentIconFolder . (strpos($payment['icon'], 'images/uploads/icons/') !== false ? $payment['icon'] : (storage_driver() === 'supabase' ? basename($iconVal) === basename($payment['icon']) ? $iconVal : $iconVal : $payment['icon'])) ?>" alt="Logo" />
             <span class="payment-name">
                 <?= $payment['name'] ?>
             </span>
