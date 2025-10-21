@@ -190,10 +190,12 @@ if [ -n "${PORT:-}" ]; then
     if awk -v port="${PORT}" '
       {
         if ($0 ~ /listen[[:space:]]*\[::\]:[0-9]+/) {
-          gsub(/listen[[:space:]]*\[::\]:[0-9]+/, "listen [::]:" port);
-        }
-        if ($0 ~ /listen[[:space:]]+[0-9]+[[:space:];]/) {
-          gsub(/listen[[:space:]]+[0-9]+/, "listen " port);
+          sub(/\[::\]:[0-9]+/, "[::]:" port);
+        } else if ($0 ~ /listen[[:space:]]+[0-9]+([[:space:];]|$)/) {
+          sub(/listen[[:space:]]+[0-9]+/, "listen " port);
+          if ($0 !~ /;/) {
+            $0 = $0 ";"
+          }
         }
         print;
       }
