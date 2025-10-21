@@ -23,6 +23,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: false
       - id: rp
         if: github.event_name != 'pull_request' && github.ref_name == 'main'
         uses: google-github-actions/release-please-action@v4

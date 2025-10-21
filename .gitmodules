@@ -1,0 +1,3 @@
+[submodule "vendor/auth0/auth0-php"]
+	path = vendor/auth0/auth0-php
+	url = https://github.com/auth0/auth0-PHP.git
