@@ -27,8 +27,8 @@ RUN chmod +x /usr/local/bin/debug-startup.sh
 COPY nginx.conf /etc/nginx/nginx.conf
 # Place default server into conf.d so it is included by our main nginx.conf
 COPY nginx.default.conf /etc/nginx/conf.d/default.conf
-# Keep compatibility with systems that read http.d as well
-COPY nginx.default.conf /etc/nginx/http.d/default.conf
+# Ensure no stray http.d default from base image remains
+RUN rm -f /etc/nginx/http.d/default.conf || true
 
 # Remove nginx conf files from webroot
 RUN rm -rf /var/www/html/nginx.conf && \
@@ -60,7 +60,7 @@ ENTRYPOINT ["dumb-init", "--"]
 
 # Requires docker engine 25+ for the --start-interval flag
 HEALTHCHECK --interval=2m --timeout=2s --start-period=20s --start-interval=5s --retries=3 \
-    CMD ["curl", "-fsS", "http://127.0.0.1/health.php"]
+    CMD ["curl", "-fsS", "http://127.0.0.1/healthz.php"]
 
 # Start both PHP-FPM, Nginx
 CMD ["/var/www/html/startup.sh"]

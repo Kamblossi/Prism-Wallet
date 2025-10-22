@@ -183,7 +183,7 @@ echo "Running final nginx configuration test..."
 # If platform provides a dynamic PORT (e.g., Render), update nginx to listen on that port
 NGINX_PORT="${PORT:-80}"
 echo "Configuring Nginx to listen on port ${NGINX_PORT}"
-for conf in /etc/nginx/nginx.conf /etc/nginx/conf.d/*.conf /etc/nginx/http.d/*.conf; do
+for conf in /etc/nginx/nginx.conf /etc/nginx/conf.d/*.conf; do
   [ -f "$conf" ] || continue
   if grep -q "__PORT__" "$conf"; then
     sed -i "s/__PORT__/${NGINX_PORT}/g" "$conf"

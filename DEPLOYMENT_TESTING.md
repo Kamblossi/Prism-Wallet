@@ -212,7 +212,7 @@ docker exec <container-name> cat /var/log/phpfpm-config-check.log
 - [ ] `nginx.conf` has `fastcgi_pass 127.0.0.1:9000;` (in PHP location block)
 - [ ] No configs reference `fastcgi_pass php-fpm:9000;` or similar hostnames
 - [ ] `Dockerfile` copies `www.conf` to `/usr/local/etc/php-fpm.d/`
-- [ ] `Dockerfile` copies nginx configs to both `conf.d` and `http.d`
+- [ ] `Dockerfile` copies nginx config to `conf.d`
 - [ ] `startup.sh` is executable and has Unix line endings
 - [ ] All required environment variables are set in Render
 
