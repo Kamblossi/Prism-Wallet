@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.0.0 (2025-10-22)
+
+
+### Features
+
+* **admin:** initialize data model for godmode admin panel ([d3a5704](https://github.com/Kamblossi/Prism-Wallet/commit/d3a570499afa671691e11fdc3fcbb08f8e1d230d))
+* **db:** Postgres-first conversion — migrations, Docker, startup, Clerk sync and PDO fixes\n\n- Add Postgres migration runner at endpoints/db/migrate.php to create/upgrade schema for users, settings, currencies, payment_methods, categories, household, subscriptions, notifications, oauth/ai tables\n- Update Dockerfile to install/enable pdo_pgsql and remove sqlite libs\n- Update startup.sh to run Postgres migrations and remove SQLite bootstrap\n- Remove SQLite bootstrap/conversion scripts and update db wrapper and stat queries for Postgres compatibility\n- Fix PDO and Clerk-related issues in includes (checkredirect, checksession, checkuser, clerk_auth_simple, clerk_session, clerk_session redirect) and api/sync-clerk-user.php\n- Add endpoint connectors that reuse the main Postgres PDO and update README.md\n\nCo-authored-by: Automated Commit Agent &lt;noreply@local&gt; ([1ed7d39](https://github.com/Kamblossi/Prism-Wallet/commit/1ed7d391a1fcbcbc8a708dcfe619c2a3c8e6fe14))
+* **profile:** overhaul profile page with avatar uploads and bug fixes ([01b518d](https://github.com/Kamblossi/Prism-Wallet/commit/01b518da620138ba75e3b5df3761fd67e902f960))
+* Updating currencies ([7e35d07](https://github.com/Kamblossi/Prism-Wallet/commit/7e35d07fbba45aa707ef87f13aa598b03f40cb96))
+* **user:** implement default and editable usernames ([feb6a96](https://github.com/Kamblossi/Prism-Wallet/commit/feb6a9690822d0305199c9a71ba69f04b95e9c6f))
+
+
+### Bug Fixes
+
+* **deploy:** force nginx to listen on IPv4 for render port detection ([67fbfbb](https://github.com/Kamblossi/Prism-Wallet/commit/67fbfbb0c9bdc5dc553f6d6071e32ebfc7ae9513))
+* **deploy:** preserve semicolon in nginx port rewrite ([eb96c9d](https://github.com/Kamblossi/Prism-Wallet/commit/eb96c9d99826b0adf614af38eaf61c5f799e42e4))
+* **deploy:** resolve nginx upstream 'php-fpm' host not found error ([29c1ecc](https://github.com/Kamblossi/Prism-Wallet/commit/29c1ecc0393db0e2837a72257a3ddf9418e38dda))
+
 ## [4.3.0](https://github.com/ellite/Wallos/compare/v4.2.0...v4.3.0) (2025-09-15)
 
 
